@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: 'http://localhost:8080',
+  baseURL: 'http://localhost:10000', // Replace with your backend URL
 });
 
 // Attach the JWT to every request once the user is logged in.
