@@ -1,0 +1,123 @@
+/* ---------- Search bar ---------- */
+
+.friends-search {
+    position: relative;
+    margin: 12px 0 14px;
+}
+
+.search-bar {
+    position: relative;
+    display: flex;
+    align-items: center;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--surface-hi);
+    transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.search-bar:focus-within {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-soft);
+    transform: translateY(-1px);
+}
+
+.search-bar input {
+    width: 100%;
+    border: none;
+    background: transparent;
+    padding: 10px 34px 10px 14px;
+    color: var(--text);
+    font-size: 0.9rem;
+    outline: none;
+}
+
+.search-clear {
+    position: absolute;
+    right: 8px;
+    width: 22px;
+    height: 22px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    background: transparent;
+    color: var(--text-muted);
+    font-size: 1.1rem;
+    line-height: 1;
+    border-radius: 50%;
+    transition: color 0.15s ease, background 0.15s ease, transform 0.15s ease;
+    animation: popIn 0.15s ease both;
+}
+
+.search-clear:hover {
+    color: var(--danger);
+    background: var(--surface);
+    transform: scale(1.1);
+}
+
+.search-popup {
+    position: absolute;
+    top: calc(100% + 8px);
+    left: 0;
+    right: 0;
+    z-index: 20;
+    background: var(--surface-hi);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.35);
+    padding: 8px;
+    max-height: 320px;
+    overflow-y: auto;
+    animation: popupIn 0.18s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.search-popup-item {
+    animation: friendCardIn 0.22s ease both;
+}
+
+.search-popup-item+.search-popup-item {
+    margin-top: 6px;
+}
+
+.search-popup-empty {
+    padding: 14px;
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 0.88rem;
+}
+
+@keyframes popupIn {
+    from {
+        opacity: 0;
+        transform: translateY(-6px) scale(0.98);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+@keyframes popIn {
+    from {
+        opacity: 0;
+        transform: scale(0.5);
+    }
+
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+@keyframes friendCardIn {
+    from {
+        opacity: 0;
+        transform: translateY(8px) scale(0.98);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}

@@ -1,0 +1,50 @@
+/* ---------- Responsive ---------- */
+
+@media (max-width: 560px) {
+    .page {
+        padding: 20px 14px;
+    }
+
+    .chat-layout-page {
+        grid-template-columns: 1fr;
+        padding: 10px;
+    }
+
+    .friends-page-layout {
+        grid-template-columns: 1fr;
+        padding: 10px;
+    }
+
+    .friends-placeholder {
+        display: none;
+    }
+
+    .chat-sidebar {
+        min-height: auto;
+        max-height: 40vh;
+    }
+
+    .friends-sidebar {
+        max-height: none;
+    }
+
+    .chat-layout-page .chat-page {
+        height: calc(100vh - 280px);
+    }
+
+    .navbar {
+        padding: 12px 16px;
+    }
+
+    .navbar-right {
+        gap: 12px;
+    }
+
+    .navbar-username {
+        display: none;
+    }
+
+    .message-bubble {
+        max-width: 82%;
+    }
+}

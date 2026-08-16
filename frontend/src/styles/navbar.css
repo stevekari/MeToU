@@ -1,0 +1,66 @@
+/* ---------- Navbar ---------- */
+
+.navbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 28px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+.navbar-brand {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 1.15rem;
+    color: var(--text);
+    letter-spacing: -0.01em;
+}
+
+.navbar-brand::before {
+    content: '\201C';
+    color: var(--accent);
+    margin-right: 4px;
+}
+
+.navbar-right {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    font-size: 0.92rem;
+}
+
+.navbar-right a {
+    color: var(--text-muted);
+    font-weight: 500;
+}
+
+.navbar-right a:hover {
+    color: var(--text);
+}
+
+.navbar-username {
+    color: var(--text);
+    font-weight: 600;
+    padding-left: 4px;
+    border-left: 1px solid var(--border);
+    padding-left: 16px;
+}
+
+.navbar-right button {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    padding: 6px 14px;
+    border-radius: var(--radius-sm);
+    font-size: 0.85rem;
+    transition: all 0.15s ease;
+}
+
+.navbar-right button:hover {
+    border-color: var(--danger);
+    color: var(--danger);
+}

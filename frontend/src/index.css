@@ -1,0 +1,67 @@
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&display=swap');
+@import './styles/navbar.css';
+@import './styles/layout.css';
+@import './styles/auth.css';
+@import './styles/friends.css';
+@import './styles/search.css';
+@import './styles/chat.css';
+@import './styles/settings.css';
+@import './styles/responsive.css';
+
+:root {
+  --bg: #14171f;
+  --surface: #1e2230;
+  --surface-hi: #262b3d;
+  --border: #323851;
+  --text: #edeef2;
+  --text-muted: #8b90a3;
+  --accent: #1d4533;
+  --accent-hover: #245740;
+  --accent-soft: rgba(29, 69, 51, 0.2);
+  --warn: #f2b84b;
+  --danger: #e2635a;
+  --success: #4ecb8f;
+  --radius: 14px;
+  --radius-sm: 8px;
+  --font-display: 'Space Grotesk', sans-serif;
+  --font-body: 'Inter', sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  /* background: var(--bg); */
+  background: url(../src/assets/steve.jpeg);
+  color: var(--text);
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+}
+
+button {
+  font-family: var(--font-body);
+  cursor: pointer;
+}
+
+input {
+  font-family: var(--font-body);
+}
+
+a {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.app-shell {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
