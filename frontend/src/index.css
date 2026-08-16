@@ -41,6 +41,9 @@ body {
   margin: 0;
   /* background: var(--bg); */
   background: url(../src/assets/steve.jpeg);
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
   color: var(--text);
   font-family: var(--font-body);
   -webkit-font-smoothing: antialiased;
