@@ -82,7 +82,10 @@ public class SecurityConfig {
                 "http://localhost:5173",
                 "http://localhost:*",
                 "https://metou-yyau.onrender.com",
-                "https://*.onrender.com"
+                "https://*.onrender.com",
+                "http://localhost:5173",
+                "https://metou-yyau.fly.dev", // <-- add this
+                "https://*.fly.dev"
         ));
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("*"));
