@@ -3,9 +3,9 @@
 # ============================
 FROM node:20-alpine AS frontend-build
 WORKDIR /frontend
-COPY hiworld/package*.json ./
+COPY frontend/package*.json ./
 RUN npm install
-COPY hiworld/ .
+COPY frontend/ .
 RUN npm run build
 
 # ============================
@@ -13,8 +13,8 @@ RUN npm run build
 # ============================
 FROM maven:3.9-eclipse-temurin-17 AS backend-build
 WORKDIR /backend
-COPY helloSteve/pom.xml .
-COPY helloSteve/src ./src
+COPY backend/pom.xml .
+COPY backend/src ./src
 RUN mvn clean package -DskipTests
 
 # ============================
