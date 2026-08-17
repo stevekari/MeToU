@@ -21,7 +21,7 @@
 }
 
 .navbar-brand::before {
-    content: '\201C';
+    content: '';
     color: var(--accent);
     margin-right: 4px;
 }

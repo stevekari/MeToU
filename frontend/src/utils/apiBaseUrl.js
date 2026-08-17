@@ -1,5 +1,5 @@
 export function getApiBaseUrl() {
-  return window.location.hostname === 'localhost' ? 'http://localhost:8080' : '';
+  return window.location.hostname === 'localhost' ? 'http://localhost:10000' : '';
 }
 
 export function getWsUrl() {

@@ -41,7 +41,7 @@ export default function Login({ onLogin }) {
         <button type="submit">Log in</button>
 
         <p className="auth-switch">
-          No account yet? <Link to="/register">Register</Link>
+         No account yet? <Link to="/register"> <span className='Register_C'>Register</span></Link>
         </p>
       </form>
     </div>

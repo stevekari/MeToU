@@ -39,15 +39,32 @@ body,
 
 body {
   margin: 0;
-  /* background: var(--bg); */
-  background: url(../src/assets/steve.jpeg);
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
-  background-blend-mode: darken, luminosity;
   color: var(--text);
   font-family: var(--font-body);
   -webkit-font-smoothing: antialiased;
+  position: relative;
+  /* required for the pseudo-element */
+  min-height: 100vh;
+  /* ensures full coverage */
+  overflow-x: hidden;
+  /* optional – prevents horizontal scroll from scale */
+}
+
+/* Background layer */
+body::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  /* top/right/bottom/left: 0 */
+  background: url(../src/assets/steve.jpeg) center / cover no-repeat;
+  filter: blur(8px);
+  /* adjust blur strength here */
+  transform: scale(1.1);
+  /* slightly enlarge so blur edges don’t show */
+  z-index: -1;
+  /* sits behind all content */
+  /* optional: keep the blend mode if you still want it */
+  /* background-blend-mode: darken, luminosity; */
 }
 
 button {

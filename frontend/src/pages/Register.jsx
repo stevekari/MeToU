@@ -50,7 +50,7 @@ export default function Register({ onLogin }) {
         <button type="submit">Register</button>
 
         <p className="auth-switch">
-          Already have an account? <Link to="/login">Log in</Link>
+          Already have an account? <Link to="/login"> <span>Log in</span></Link>
         </p>
       </form>
     </div>
