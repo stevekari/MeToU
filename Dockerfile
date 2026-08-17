@@ -15,6 +15,7 @@ FROM maven:3.9-eclipse-temurin-17 AS backend-build
 WORKDIR /backend
 COPY backend/pom.xml .
 COPY backend/src ./src
+COPY --from=frontend-build /frontend/dist ./src/main/resources/static
 RUN mvn clean package -DskipTests
 
 # ============================
@@ -23,11 +24,7 @@ RUN mvn clean package -DskipTests
 FROM eclipse-temurin:17-jre-alpine
 WORKDIR /app
 
-# Copy backend JAR
 COPY --from=backend-build /backend/target/*.jar app.jar
-
-# Copy React build into Spring Boot static folder
-COPY --from=frontend-build /frontend/dist /app/static/
 
 EXPOSE 10000
 ENTRYPOINT ["java", "-jar", "app.jar"]

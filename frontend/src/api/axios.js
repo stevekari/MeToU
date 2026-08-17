@@ -1,9 +1,7 @@
 import axios from 'axios';
+import { getApiBaseUrl } from '../utils/apiBaseUrl';
 
-// If on localhost -> use local Java, if on Render/Fly -> use same domain (no CORS)
-const API_BASE_URL = window.location.hostname === 'localhost' 
-  ? 'http://localhost:8080' 
-  : ''; // <-- same origin, calls https://metou-yyau.onrender.com/auth/register
+const API_BASE_URL = getApiBaseUrl();
 
 const api = axios.create({
   baseURL: API_BASE_URL,

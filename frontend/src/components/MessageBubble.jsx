@@ -1,12 +1,9 @@
 import { parseMessageContent } from '../utils/messageContent';
-
-const API_BASE_URL = 'http://localhost:8080';
+import { resolveBackendUrl } from '../utils/apiBaseUrl';
 
 function resolveMediaUrl(parsed) {
   const src = parsed.mediaUrl || parsed.dataUrl;
-  if (!src) return '';
-  if (src.startsWith('http://') || src.startsWith('https://') || src.startsWith('data:')) return src;
-  return `${API_BASE_URL}${src}`;
+  return resolveBackendUrl(src);
 }
 
 export default function MessageBubble({ message, isMine }) {

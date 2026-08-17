@@ -19,7 +19,11 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     @Override
     public void registerStompEndpoints(@NonNull StompEndpointRegistry registry) {
         registry.addEndpoint("/ws")
-                .setAllowedOrigins("http://localhost:5173")
+                .setAllowedOriginPatterns(
+                        "http://localhost:*",
+                        "https://*.onrender.com",
+                        "https://*.fly.dev"
+                )
                 .withSockJS();
     }
 
