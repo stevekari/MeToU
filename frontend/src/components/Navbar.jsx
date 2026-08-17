@@ -11,7 +11,7 @@ export default function Navbar({ user, onLogout }) {
   return (
     <nav className="navbar">
       <Link to="/friends" className="navbar-brand">
-        Gio Chat
+        <img src="../src/assets/gio.png" alt="giochat" width={100} />
       </Link>
 
       {user && (

@@ -1,5 +1,6 @@
 import { parseMessageContent } from '../utils/messageContent';
 import { resolveBackendUrl } from '../utils/apiBaseUrl';
+import VoiceMessage from './VoiceMessage';
 
 function resolveMediaUrl(parsed) {
   const src = parsed.mediaUrl || parsed.dataUrl;
@@ -17,7 +18,7 @@ export default function MessageBubble({ message, isMine }) {
 
   return (
     <div className={`message-row ${isMine ? 'mine' : 'theirs'}`}>
-      <div className={`message-bubble ${isMine ? 'mine' : 'theirs'}`}>
+      <div className={`message-bubble ${isMine ? 'mine' : 'theirs'} ${parsed.type === 'audio' ? 'audio-bubble' : ''}`}>
         {parsed.type === 'text' && <div className="message-content">{parsed.text}</div>}
 
         {parsed.type === 'image' && (
@@ -25,9 +26,7 @@ export default function MessageBubble({ message, isMine }) {
         )}
 
         {parsed.type === 'audio' && (
-          <audio className="message-audio" controls preload="metadata" src={mediaSrc}>
-            Your browser does not support audio playback.
-          </audio>
+          <VoiceMessage src={mediaSrc} durationSec={parsed.durationSec} isMine={isMine} />
         )}
 
         <div className="message-meta">

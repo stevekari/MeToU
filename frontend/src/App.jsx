@@ -6,6 +6,7 @@ import Register from './pages/Register';
 import FriendsList from './pages/FriendsList';
 import Chat from './pages/Chat';
 import Settings from './pages/Settings';
+import Footer from './components/Footer';
 
 function RequireAuth({ isAuthenticated, children }) {
   if (!isAuthenticated) return <Navigate to="/login" replace />;
@@ -56,6 +57,7 @@ export default function App() {
           <Route path="*" element={<Navigate to={isAuthenticated ? '/friends' : '/login'} replace />} />
         </Routes>
       </main>
+      <Footer />
     </div>
   );
 }

@@ -8,6 +8,9 @@
 @import './styles/settings.css';
 @import './styles/responsive.css';
 
+@import './styles/voiceMessage.css';
+@import './styles/footer.css';
+
 :root {
   --bg: #14171f;
   --surface: #1e2230;
@@ -56,8 +59,8 @@ body::before {
   position: absolute;
   inset: 0;
   /* top/right/bottom/left: 0 */
-  background: url(../src/assets/steve.jpeg) center / cover no-repeat;
-  filter: blur(8px);
+  background: url(../src/assets/gc.jpeg) center / cover no-repeat;
+  filter: blur(3px);
   /* adjust blur strength here */
   transform: scale(1.1);
   /* slightly enlarge so blur edges don’t show */
@@ -81,8 +84,18 @@ a {
   text-decoration: none;
 }
 
-.app-shell {
+/* .app-shell {
   display: flex;
   flex-direction: column;
   min-height: 100vh;
+} */
+
+.app-shell {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.app-main {
+  flex: 1;
 }
