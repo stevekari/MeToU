@@ -29,5 +29,5 @@ COPY --from=backend-build /backend/target/*.jar app.jar
 # Copy React build into Spring Boot static folder
 COPY --from=frontend-build /frontend/dist /app/static/
 
-EXPOSE 8080
+EXPOSE 10000
 ENTRYPOINT ["java", "-jar", "app.jar"]
