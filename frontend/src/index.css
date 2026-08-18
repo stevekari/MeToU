@@ -106,4 +106,5 @@ a {
   height: 80px;
   border-radius: 50px;
   object-fit: cover;
+  opacity: .7;
 }
