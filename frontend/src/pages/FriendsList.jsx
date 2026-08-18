@@ -16,8 +16,8 @@ export default function FriendsList() {
 
   useEffect(() => {
     getMyConversations()
-      .then(setConversations)
-      .finally(() => setLoading(false));
+     .then(setConversations)
+     .finally(() => setLoading(false));
   }, []);
 
   const trimmedSearch = search.trim();
@@ -31,13 +31,13 @@ export default function FriendsList() {
     setSearchLoading(true);
     const timer = setTimeout(() => {
       searchUsers(trimmedSearch)
-        .then((results) => {
+       .then((results) => {
           if (!cancelled) setSearchResults(results);
         })
-        .catch(() => {
+       .catch(() => {
           if (!cancelled) setSearchResults([]);
         })
-        .finally(() => {
+       .finally(() => {
           if (!cancelled) setSearchLoading(false);
         });
     }, 250);
@@ -49,8 +49,12 @@ export default function FriendsList() {
   }, [trimmedSearch]);
 
   const openChat = async (friend) => {
-    const { conversationId } = await startConversation(friend.id);
-    navigate(`/chat/${conversationId}`, { state: { friend } });
+    try {
+      const { conversationId } = await startConversation(friend.id);
+      navigate(`/chat/${conversationId}`, { state: { friend } });
+    } catch (e) {
+      console.error(e);
+    }
   };
 
   const showSearchPopup = searchFocused && trimmedSearch.length >= 3;
@@ -105,16 +109,9 @@ export default function FriendsList() {
                     className="search-popup-item"
                     style={{ animationDelay: `${index * 30}ms` }}
                     onMouseDown={(e) => e.preventDefault()}
+                    onClick={() => selectFromSearch(friend)}
                   >
-                    <FriendCard
-                      friend={f}
-                      conversationId={f.conversationId || f._id}
-                      lastMessage={conversations[f._id]?.lastMessage}
-                      lastMessageAt={conversations[f._id]?.updatedAt}
-                      unreadCount={conversations[f._id]?.unread}
-                      active={activeId === f._id}
-                      onClick={() => navigate(`/chat/${f.conversationId}`)}
-                    />
+                    <FriendCard friend={friend} />
                   </div>
                 ))}
             </div>
