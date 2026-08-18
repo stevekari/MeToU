@@ -13,6 +13,12 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/users")
+@CrossOrigin(origins = {
+        "https://your-frontend.onrender.com",
+        "capacitor://localhost",
+        "https://localhost",
+        "http://localhost:5173"
+})
 public class UserController {
 
     private final UserRepository userRepository;

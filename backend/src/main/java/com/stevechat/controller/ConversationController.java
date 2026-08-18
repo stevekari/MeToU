@@ -18,6 +18,12 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/conversations")
+@CrossOrigin(origins = {
+        "https://your-frontend.onrender.com",
+        "capacitor://localhost",
+        "https://localhost",
+        "http://localhost:5173"
+})
 public class ConversationController {
 
     private final ConversationRepository conversationRepository;
