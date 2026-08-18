@@ -1,14 +1,14 @@
-import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { searchUsers } from '../api/userApi';
-import { getMyConversations, startConversation } from '../api/conversationApi';
-import FriendCard from '../components/FriendCard';
-import { getMessagePreview } from '../utils/messageContent';
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { searchUsers } from "../api/userApi";
+import { getMyConversations, startConversation } from "../api/conversationApi";
+import FriendCard from "../components/FriendCard";
+import { getMessagePreview } from "../utils/messageContent";
 
 export default function FriendsList() {
   const [conversations, setConversations] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState('');
+  const [search, setSearch] = useState("");
   const [searchFocused, setSearchFocused] = useState(false);
   const [searchResults, setSearchResults] = useState([]);
   const [searchLoading, setSearchLoading] = useState(false);
@@ -56,7 +56,7 @@ export default function FriendsList() {
   const showSearchPopup = searchFocused && trimmedSearch.length >= 3;
 
   const selectFromSearch = (friend) => {
-    setSearch('');
+    setSearch("");
     setSearchFocused(false);
     openChat(friend);
   };
@@ -82,7 +82,7 @@ export default function FriendsList() {
               <button
                 className="search-clear"
                 onMouseDown={(e) => e.preventDefault()}
-                onClick={() => setSearch('')}
+                onClick={() => setSearch("")}
                 aria-label="Clear search"
               >
                 ×
@@ -92,7 +92,9 @@ export default function FriendsList() {
 
           {showSearchPopup && (
             <div className="search-popup">
-              {searchLoading && <div className="search-popup-empty">Searching...</div>}
+              {searchLoading && (
+                <div className="search-popup-empty">Searching...</div>
+              )}
               {!searchLoading && searchResults.length === 0 && (
                 <div className="search-popup-empty">No friends found</div>
               )}
@@ -104,7 +106,15 @@ export default function FriendsList() {
                     style={{ animationDelay: `${index * 30}ms` }}
                     onMouseDown={(e) => e.preventDefault()}
                   >
-                    <FriendCard friend={friend} onClick={() => selectFromSearch(friend)} />
+                    <FriendCard
+                      friend={f}
+                      conversationId={f.conversationId || f._id}
+                      lastMessage={conversations[f._id]?.lastMessage}
+                      lastMessageAt={conversations[f._id]?.updatedAt}
+                      unreadCount={conversations[f._id]?.unread}
+                      active={activeId === f._id}
+                      onClick={() => navigate(`/chat/${f.conversationId}`)}
+                    />
                   </div>
                 ))}
             </div>
@@ -112,7 +122,9 @@ export default function FriendsList() {
         </div>
 
         {conversations.length === 0 && (
-          <p className="empty-state">No conversations yet — search a username above to start chatting.</p>
+          <p className="empty-state">
+            No conversations yet — search a username above to start chatting.
+          </p>
         )}
 
         <div className="friends-list">
@@ -121,14 +133,20 @@ export default function FriendsList() {
               key={conv.conversationId}
               friend={conv.otherUser}
               lastMessage={getMessagePreview(conv.lastMessage)}
-              onClick={() => navigate(`/chat/${conv.conversationId}`, { state: { friend: conv.otherUser } })}
+              onClick={() =>
+                navigate(`/chat/${conv.conversationId}`, {
+                  state: { friend: conv.otherUser },
+                })
+              }
             />
           ))}
         </div>
       </aside>
 
       <section className="friends-placeholder">
-        <div className="empty-state">Select a friend on the left to start chatting.</div>
+        <div className="empty-state">
+          Select a friend on the left to start chatting.
+        </div>
       </section>
     </div>
   );

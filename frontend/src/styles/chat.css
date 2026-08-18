@@ -112,7 +112,7 @@
 }
 
 .message-bubble.mine {
-    background: var(--accent);
+    background: var(--border);
     color: white;
     border-bottom-right-radius: 4px;
 }

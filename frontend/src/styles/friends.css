@@ -77,3 +77,122 @@
     background: var(--surface);
     height: calc(100vh - 105px);
 }
+
+.friend-card {
+    display: flex;
+    gap: 12px;
+    padding: 12px 14px;
+    border-radius: var(--radius);
+    background: var(--surface);
+    border: 1px solid transparent;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.friend-card:hover {
+    background: var(--surface-hi);
+}
+
+.friend-card.active {
+    background: var(--accent-soft);
+    border-color: var(--accent);
+}
+
+.friend-avatar-wrap {
+    position: relative;
+    width: 48px;
+    height: 48px;
+    flex-shrink: 0;
+}
+
+.friend-avatar {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.online-dot {
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    width: 11px;
+    height: 11px;
+    border-radius: 50%;
+    background: var(--text-muted);
+    border: 2px solid var(--surface);
+}
+
+.online-dot.online {
+    background: var(--success);
+    box-shadow: 0 0 0 4px rgba(78, 203, 143, 0.18);
+}
+
+.friend-info {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.friend-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.friend-name {
+    font-weight: 600;
+    font-family: var(--font-display);
+    color: var(--text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.friend-time {
+    font-size: 11px;
+    color: var(--text-muted);
+    flex-shrink: 0;
+}
+
+.friend-bottom {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+}
+
+.friend-preview {
+    font-size: 13px;
+    color: var(--text-muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 160px;
+}
+
+.friend-preview.typing {
+    color: var(--success);
+    font-style: italic;
+}
+
+.unread-badge {
+    background: var(--accent);
+    color: white;
+    font-size: 11px;
+    font-weight: 700;
+    min-width: 20px;
+    height: 20px;
+    border-radius: 20px;
+    display: grid;
+    place-items: center;
+    padding: 0 6px;
+}
+
+.last-seen {
+    font-size: 11px;
+    color: var(--text-muted);
+    opacity: 0.7;
+}

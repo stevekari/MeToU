@@ -108,3 +108,118 @@
 .settings-status.error {
     color: var(--danger);
 }
+
+
+.settings-layout {
+    display: grid;
+    grid-template-columns: 220px 1fr;
+    gap: 20px;
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 24px;
+}
+
+.settings-sidebar {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    height: fit-content;
+}
+
+.settings-sidebar button {
+    padding: 12px;
+    border-radius: 10px;
+    border: none;
+    background: transparent;
+    color: var(--text-muted);
+    text-align: left;
+    display: flex;
+    gap: 10px;
+    font-weight: 500;
+}
+
+.settings-sidebar button.active {
+    background: var(--surface-hi);
+    color: var(--text);
+}
+
+.settings-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.settings-card h1 {
+    font-family: var(--font-display);
+    margin: 0;
+}
+
+.settings-sub {
+    color: var(--text-muted);
+    font-size: 13px;
+    margin-top: -8px;
+}
+
+.avatar-editor {
+    display: flex;
+    gap: 18px;
+    align-items: center;
+}
+
+.settings-avatar-preview {
+    width: 84px;
+    height: 84px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid var(--border);
+}
+
+.btn-file {
+    background: var(--surface-hi);
+    border: 1px solid var(--border);
+    padding: 8px 14px;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+}
+
+.settings-status.success {
+    color: var(--success);
+    background: rgba(78, 203, 143, 0.12);
+    padding: 10px;
+    border-radius: 8px;
+}
+
+.settings-status.error {
+    color: var(--danger);
+    background: rgba(226, 99, 90, 0.12);
+    padding: 10px;
+    border-radius: 8px;
+}
+
+.settings-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.setting-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 0;
+    border-bottom: 1px solid var(--border);
+}
+
+.muted {
+    color: var(--text-muted);
+    font-weight: 400;
+    font-size: 12px;
+}

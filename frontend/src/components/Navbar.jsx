@@ -1,8 +1,10 @@
 import { Link, useNavigate } from 'react-router-dom';
 import gioImg from '../assets/gio.png'; 
+import { useTheme } from '../contexts/ThemeContext';
 
 export default function Navbar({ user, onLogout }) {
   const navigate = useNavigate();
+  const {theme, toggleTheme } = useTheme()
 
   const handleLogout = () => {
     onLogout();
@@ -22,6 +24,9 @@ export default function Navbar({ user, onLogout }) {
           <Link to="/settings">Settings</Link>
           <span className="navbar-username">{user.username}</span>
           <button onClick={handleLogout}>Log out</button>
+          <button onClick={toggleTheme} className="theme-toggle" title="Toggle theme">
+  <i className={`fa-solid ${theme === 'dark'? 'fa-sun' : 'fa-moon'}`}></i>
+</button>
         </div>
       )}
     </nav>

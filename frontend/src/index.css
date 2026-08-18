@@ -7,11 +7,34 @@
 @import './styles/chat.css';
 @import './styles/settings.css';
 @import './styles/responsive.css';
-
 @import './styles/voiceMessage.css';
+@import './styles/themecontext.css';
 @import './styles/footer.css';
 
+/* LIGHT THEME - default */
 :root {
+  --bg: #f1f3f9;
+  --surface: #ffffff;
+  --surface-hi: #eef0f7;
+  --border: #e0e4ef;
+  --text: #14171f;
+  --text-muted: #7a8198;
+  --accent: #1d4533;
+  --accent-hover: #245740;
+  --accent-soft: rgba(29, 69, 51, 0.12);
+  --warn: #f2b84b;
+  --danger: #e2635a;
+  --success: #4ecb8f;
+  --radius: 14px;
+  --radius-sm: 8px;
+  --font-display: 'Space Grotesk', sans-serif;
+  --font-body: 'Inter', sans-serif;
+  --bg-image-opacity: 0.18;
+  --bg-blur: 2px;
+}
+
+/* DARK THEME - your current design */
+[data-theme='dark'] {
   --bg: #14171f;
   --surface: #1e2230;
   --surface-hi: #262b3d;
@@ -21,22 +44,16 @@
   --accent: #1d4533;
   --accent-hover: #245740;
   --accent-soft: rgba(29, 69, 51, 0.2);
-  --warn: #f2b84b;
-  --danger: #e2635a;
-  --success: #4ecb8f;
-  --radius: 14px;
-  --radius-sm: 8px;
-  --font-display: 'Space Grotesk', sans-serif;
-  --font-body: 'Inter', sans-serif;
+  --bg-image-opacity: 0.85;
+  --bg-blur: 3px;
 }
 
 * {
   box-sizing: border-box;
+  transition: background-color 0.25s ease, color 0.25s ease, border-color 0.25s ease;
 }
 
-html,
-body,
-#root {
+html, body, #root {
   height: 100%;
 }
 
@@ -46,28 +63,26 @@ body {
   font-family: var(--font-body);
   -webkit-font-smoothing: antialiased;
   position: relative;
-  /* required for the pseudo-element */
   min-height: 100vh;
-  /* ensures full coverage */
   overflow-x: hidden;
-  /* optional – prevents horizontal scroll from scale */
+  background-color: var(--bg);
 }
 
 /* Background layer */
 body::before {
   content: "";
-  position: absolute;
+  position: fixed;
   inset: 0;
-  /* top/right/bottom/left: 0 */
   background: url(../src/assets/gc.jpeg) center / cover no-repeat;
-  filter: blur(3px);
-  /* adjust blur strength here */
+  filter: blur(var(--bg-blur));
   transform: scale(1.1);
-  /* slightly enlarge so blur edges don’t show */
   z-index: -1;
-  /* sits behind all content */
-  /* optional: keep the blend mode if you still want it */
-  /* background-blend-mode: darken, luminosity; */
+  opacity: var(--bg-image-opacity);
+  pointer-events: none;
+}
+
+[data-theme='light'] body::before {
+  opacity: 0.12;
 }
 
 button {
@@ -84,12 +99,6 @@ a {
   text-decoration: none;
 }
 
-/* .app-shell {
-  display: flex;
-  flex-direction: column;
-  min-height: 100vh;
-} */
-
 .app-shell {
   min-height: 100vh;
   display: flex;
@@ -100,7 +109,6 @@ a {
   flex: 1;
 }
 
-
 .img-round {
   width: 80px;
   height: 80px;
@@ -108,7 +116,6 @@ a {
   object-fit: cover;
   opacity: .7;
 }
-
 
 .giochat {
   color: var(--success);

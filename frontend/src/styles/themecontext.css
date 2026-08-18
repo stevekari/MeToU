@@ -1,0 +1,102 @@
+:root {
+    --bg: #f8fafc;
+    --bg-soft: #ffffff;
+    --text: #0f172a;
+    --text-muted: #64748b;
+    --card: #ffffff;
+    --card-hover: #f1f5f9;
+    --border: #e2e8f0;
+    --input-bg: #ffffff;
+    --bubble-mine: #064961;
+    --bubble-theirs: #ffffff;
+    --bubble-theirs-text: #0f172a;
+    --navbar-bg: rgba(255, 255, 255, 0.85);
+}
+
+[data-theme='dark'] {
+    --bg: #020617;
+    --bg-soft: #0f172a;
+    --text: #f1f5f9;
+    --text-muted: #94a3b8;
+    --card: #0f172a;
+    --card-hover: #1e293b;
+    --border: #1e293b;
+    --input-bg: #0f172a;
+    --bubble-mine: #09e2e95a;
+    --bubble-theirs: #1e293b;
+    --bubble-theirs-text: #e2e8f0;
+    --navbar-bg: rgba(15, 23, 42, 0.85);
+}
+
+* {
+    transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+}
+
+/* body {
+    background: var(--bg);
+    color: var(--text);
+    margin: 0;
+}
+
+.app-shell {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    background: var(--bg);
+} */
+
+/* .app-main {
+    flex: 1;
+    background: var(--bg);
+} */
+
+/* apply to your existing components */
+.message-bubble.theirs {
+    background: var(--bubble-theirs) !important;
+    color: var(--bubble-theirs-text) !important;
+    border: 1px solid var(--border);
+}
+
+.message-bubble.mine {
+    background: var(--bubble-mine) !important;
+}
+
+.chat-input {
+    background: var(--card) !important;
+    border-top: 1px solid var(--border) !important;
+}
+
+.chat-input input {
+    background: var(--input-bg) !important;
+    color: var(--text) !important;
+    border: 1px solid var(--border) !important;
+}
+
+.voice-msg.theirs.bar {
+    background: var(--text) !important;
+}
+
+/* FriendCard, Chat list etc */
+.friend-card, .chat-window {
+    background: var(--card) !important;
+    border-color: var(--border) !important;
+    color: var(--text) !important;
+}
+
+.theme-toggle {
+    width: 38px;
+    height: 38px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: var(--card);
+    color: var(--text);
+    display: grid;
+    place-items: center;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.theme-toggle:hover {
+    transform: translateY(-1px);
+    background: var(--card-hover);
+}
