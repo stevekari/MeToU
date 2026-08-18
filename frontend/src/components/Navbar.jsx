@@ -11,7 +11,7 @@ export default function Navbar({ user, onLogout }) {
   return (
     <nav className="navbar">
       <Link to="/friends" className="navbar-brand">
-        <img className='img-round' src="../src/assets/chat.jpeg" alt=""  />
+        <img className='img-round' src="../src/assets/kari.png" alt=""  />
       </Link>
 
       {user && (
