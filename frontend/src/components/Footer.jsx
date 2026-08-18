@@ -10,8 +10,8 @@ export default function Footer() {
       <div className="footer-content">
         <div className="footer-brand">
           <div className="footer-logo">
-            <img className='img-round' src={gioImg} alt="giochat" />
-            {/* <span>SteveChat</span> */}
+            {/* <img className='img-round' src={gioImg} alt="giochat" /> */}
+            <span className='giochat'>GIOCHAT</span>
           </div>
           <p className="footer-tagline">
             Connect instantly. Chat securely. <br />Built for real friendships.
