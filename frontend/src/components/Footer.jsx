@@ -1,4 +1,4 @@
-
+import gioImg from '../assets/gio.png'; 
 
 export default function Footer() {
   const year = new Date().getFullYear();
@@ -10,7 +10,7 @@ export default function Footer() {
       <div className="footer-content">
         <div className="footer-brand">
           <div className="footer-logo">
-            <img className='img-round' src="../src/assets/chat.jpeg" alt="giochat" />
+            <img className='img-round' src={gioImg} alt="giochat" />
             {/* <span>SteveChat</span> */}
           </div>
           <p className="footer-tagline">

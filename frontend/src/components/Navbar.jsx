@@ -1,4 +1,5 @@
 import { Link, useNavigate } from 'react-router-dom';
+import gioImg from '../assets/gio.png'; 
 
 export default function Navbar({ user, onLogout }) {
   const navigate = useNavigate();
@@ -11,7 +12,8 @@ export default function Navbar({ user, onLogout }) {
   return (
     <nav className="navbar">
       <Link to="/friends" className="navbar-brand">
-        <img className='img-round' src="../src/assets/kari.png" alt=""  />
+        <img className='img-round' src={gioImg} alt=""  />
+        
       </Link>
 
       {user && (
