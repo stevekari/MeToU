@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.security.Principal;
+import java.util.Map;
 
 @RestController
 public class ChatWebSocketController {
@@ -64,6 +65,28 @@ public class ChatWebSocketController {
     public void sendViaWebSocket(SendMessageRequest request, Principal principal) {
         Long senderId = resolveSenderId(principal.getName());
         persistAndBroadcast(request, senderId);
+    }
+
+    @MessageMapping("/call.signal")
+    public void signalCall(Map<String, Object> signal, Principal principal) {
+        Object conversationId = signal.get("conversationId");
+        if (conversationId == null) {
+            return;
+        }
+
+        Long senderId = resolveSenderId(principal.getName());
+        long conversationIdValue = Long.parseLong(conversationId.toString());
+        Conversation conversation = conversationRepository.findById(conversationIdValue)
+                .orElseThrow(() -> new RuntimeException("Conversation not found"));
+        if (!conversation.getUserAId().equals(senderId) && !conversation.getUserBId().equals(senderId)) {
+            throw new RuntimeException("Not part of this conversation");
+        }
+
+        signal.put("senderId", senderId);
+        messagingTemplate.convertAndSend(
+                "/topic/conversation." + conversationId,
+                signal
+        );
     }
 
     // REST fallback: same effect, useful for simple testing without a socket

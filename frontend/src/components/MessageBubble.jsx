@@ -1,6 +1,7 @@
 import { parseMessageContent } from '../utils/messageContent';
 import { resolveBackendUrl } from '../utils/apiBaseUrl';
 import VoiceMessage from './VoiceMessage';
+import { useLanguage } from '../contexts/LanguageContext';
 
 function resolveMediaUrl(parsed) {
   const src = parsed.mediaUrl || parsed.dataUrl;
@@ -8,6 +9,7 @@ function resolveMediaUrl(parsed) {
 }
 
 export default function MessageBubble({ message, isMine }) {
+  const { t } = useLanguage();
   const time = new Date(message.timestamp).toLocaleTimeString([], {
     hour: '2-digit',
     minute: '2-digit',
@@ -22,7 +24,7 @@ export default function MessageBubble({ message, isMine }) {
         {parsed.type === 'text' && <div className="message-content">{parsed.text}</div>}
 
         {parsed.type === 'image' && (
-          <img className="message-image" src={mediaSrc} alt={parsed.fileName || 'Shared photo'} />
+          <img className="message-image" src={mediaSrc} alt={parsed.fileName || t('sharedPhoto')} />
         )}
 
         {parsed.type === 'audio' && (

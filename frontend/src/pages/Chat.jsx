@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useLocation, useParams, useNavigate } from 'react-router-dom';
 import { getMessages, getMyConversations, startConversation } from '../api/conversationApi';
 import { searchUsers } from '../api/userApi';
@@ -8,12 +8,16 @@ import ChatInput from '../components/ChatInput';
 import FriendCard from '../components/FriendCard';
 import { getMessagePreview } from '../utils/messageContent';
 import { resolveAvatarUrl } from '../utils/avatarUrl';
+import { useLanguage } from '../contexts/LanguageContext';
+import { useWebRTCCall } from '../hooks/useWebRTCCall';
+import CallPanel from '../components/CallPanel';
 
 export default function Chat({ currentUserId }) {
   const { conversationId } = useParams();
   const location = useLocation();
   const navigate = useNavigate();
   const selectedFriend = location.state?.friend;
+  const { t } = useLanguage();
 
   const [messages, setMessages] = useState([]);
   const [conversations, setConversations] = useState([]);
@@ -24,13 +28,18 @@ export default function Chat({ currentUserId }) {
   const [friend, setFriend] = useState(selectedFriend ?? null);
   const [loading, setLoading] = useState(true);
   const [sidebarLoading, setSidebarLoading] = useState(true);
-  const bottomRef = useRef(null);
-
+  const [callSignal, setCallSignal] = useState(location.state?.incomingCall ?? null);
   const handleIncoming = useCallback((message) => {
     setMessages((prev) => [...prev, message]);
   }, []);
 
-  const { sendMessage } = useWebSocket(conversationId, handleIncoming);
+  const { sendMessage, sendCallSignal } = useWebSocket(conversationId, handleIncoming, setCallSignal);
+  const call = useWebRTCCall({
+    conversationId,
+    currentUserId,
+    sendSignal: sendCallSignal,
+    onSignal: callSignal,
+  });
 
   useEffect(() => {
     if (selectedFriend) {
@@ -60,10 +69,6 @@ export default function Chat({ currentUserId }) {
       .then(setMessages)
       .finally(() => setLoading(false));
   }, [conversationId]);
-
-  useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
 
   const trimmedSearch = search.trim();
   const showSearchPopup = searchFocused && trimmedSearch.length >= 3;
@@ -108,13 +113,13 @@ export default function Chat({ currentUserId }) {
   return (
     <div className="chat-layout-page">
       <aside className="chat-sidebar">
-        <h2>Friends</h2>
+        <h2>{t('friends')} <span className="friends-count">({t('friendsCount', { count: conversations.length })})</span></h2>
 
         <div className="friends-search">
           <div className="search-bar">
             <input
               type="text"
-              placeholder="Search"
+              placeholder={t('search')}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               onFocus={() => setSearchFocused(true)}
@@ -125,7 +130,7 @@ export default function Chat({ currentUserId }) {
                 className="search-clear"
                 onMouseDown={(e) => e.preventDefault()}
                 onClick={() => setSearch('')}
-                aria-label="Clear search"
+                aria-label={t('clearSearch')}
               >
                 ×
               </button>
@@ -134,9 +139,9 @@ export default function Chat({ currentUserId }) {
 
           {showSearchPopup && (
             <div className="search-popup">
-              {searchLoading && <div className="search-popup-empty">Searching...</div>}
+              {searchLoading && <div className="search-popup-empty">{t('searching')}</div>}
               {!searchLoading && searchResults.length === 0 && (
-                <div className="search-popup-empty">No friends found</div>
+                <div className="search-popup-empty">{t('noFriendsFound')}</div>
               )}
               {!searchLoading &&
                 searchResults.map((nextFriend, index) => (
@@ -154,9 +159,9 @@ export default function Chat({ currentUserId }) {
         </div>
 
         <div className="friends-list">
-          {sidebarLoading && <div className="empty-state">Loading friends...</div>}
+          {sidebarLoading && <div className="empty-state">{t('loadingFriends')}</div>}
           {!sidebarLoading && conversations.length === 0 && (
-            <div className="empty-state">No conversations yet — search a username above to start chatting.</div>
+            <div className="empty-state">{t('noConversations')}</div>
           )}
           {!sidebarLoading &&
             conversations.map((conv) => (
@@ -180,28 +185,45 @@ export default function Chat({ currentUserId }) {
                 alt={friend.username}
               />
               <h2>{friend.username}</h2>
+              <div className="call-buttons">
+                <button type="button" onClick={() => call.startCall('voice')} disabled={call.callState !== 'idle'} aria-label="Start voice call" title="Start voice call">
+                  <i className="fa-solid fa-phone"></i>
+                </button>
+                <button type="button" onClick={() => call.startCall('video')} disabled={call.callState !== 'idle'} aria-label="Start video call" title="Start video call">
+                  <i className="fa-solid fa-video"></i>
+                </button>
+              </div>
             </>
           )}
           {!friend && (
             <h2>
-              Open chat from your{' '}
+              {t('openChat')}{' '}
               <button className="link-button" onClick={() => navigate('/friends')}>
-                friends list
+                {t('friendsList')}
               </button>
             </h2>
           )}
         </div>
 
         <div className="chat-messages">
-          {loading && <div className="page-loading">Loading conversation...</div>}
+          {loading && <div className="page-loading">{t('loadingConversation')}</div>}
           {!loading && messages.length === 0 && friend && (
-            <div className="empty-state">Say hi to {friend.username}!</div>
+            <div className="empty-state">{t('sayHi', { username: friend.username })}</div>
           )}
           {messages.map((m) => (
             <MessageBubble key={m.id ?? `${m.senderId}-${m.timestamp}`} message={m} isMine={m.senderId === currentUserId} />
           ))}
-          <div ref={bottomRef} />
         </div>
+
+        <CallPanel
+          callState={call.callState}
+          callType={call.callType}
+          localStream={call.localStream}
+          remoteStream={call.remoteStream}
+          error={call.error}
+          onAccept={call.acceptCall}
+          onEnd={call.callState === 'incoming' ? call.rejectCall : call.endCall}
+        />
 
         <ChatInput onSend={sendMessage} />
       </section>

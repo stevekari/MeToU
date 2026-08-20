@@ -6,14 +6,20 @@ import { sendMessageRest } from '../api/conversationApi';
 
 // Connects to the STOMP broker and subscribes to a single conversation's topic.
 // Call sendMessage(content) to publish; onMessage(msg) fires for every incoming frame.
-export function useWebSocket(conversationId, onMessage) {
+export function useWebSocket(conversationId, onMessage, onCallSignal) {
   const clientRef = useRef(null);
   const onMessageRef = useRef(onMessage);
+  const onCallSignalRef = useRef(onCallSignal);
+  const pendingCallSignalsRef = useRef([]);
   const [connected, setConnected] = useState(false);
 
   useEffect(() => {
     onMessageRef.current = onMessage;
   }, [onMessage]);
+
+  useEffect(() => {
+    onCallSignalRef.current = onCallSignal;
+  }, [onCallSignal]);
 
   useEffect(() => {
     if (!conversationId) return;
@@ -28,8 +34,19 @@ export function useWebSocket(conversationId, onMessage) {
         setConnected(true);
         client.subscribe(`/topic/conversation.${conversationId}`, (frame) => {
           const body = JSON.parse(frame.body);
-          onMessageRef.current(body);
+          if (body.callType) {
+            onCallSignalRef.current?.(body);
+          } else {
+            onMessageRef.current(body);
+          }
         });
+        pendingCallSignalsRef.current.forEach((signal) => {
+          client.publish({
+            destination: '/app/call.signal',
+            body: JSON.stringify({ conversationId, ...signal }),
+          });
+        });
+        pendingCallSignalsRef.current = [];
       },
       onDisconnect: () => setConnected(false),
       onStompError: (frame) => {
@@ -43,6 +60,7 @@ export function useWebSocket(conversationId, onMessage) {
     return () => {
       client.deactivate();
       clientRef.current = null;
+      pendingCallSignalsRef.current = [];
       setConnected(false);
     };
   }, [conversationId]);
@@ -64,5 +82,16 @@ export function useWebSocket(conversationId, onMessage) {
     [conversationId]
   );
 
-  return { connected, sendMessage };
+  const sendCallSignal = useCallback((signal) => {
+    if (clientRef.current?.connected) {
+      clientRef.current.publish({
+        destination: '/app/call.signal',
+        body: JSON.stringify({ conversationId, ...signal }),
+      });
+      return;
+    }
+    pendingCallSignalsRef.current.push(signal);
+  }, [conversationId]);
+
+  return { connected, sendMessage, sendCallSignal };
 }

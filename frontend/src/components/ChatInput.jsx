@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { uploadMedia } from '../api/mediaApi';
+import { useLanguage } from '../contexts/LanguageContext';
 
 function pickAudioMimeType() {
   if (!window.MediaRecorder?.isTypeSupported) return '';
@@ -21,9 +22,12 @@ export default function ChatInput({ onSend }) {
   const [uploadingVoice, setUploadingVoice] = useState(false);
   const [voiceDraft, setVoiceDraft] = useState(null);
   const [recordingError, setRecordingError] = useState('');
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const mediaRecorderRef = useRef(null);
   const chunksRef = useRef([]);
   const startedAtRef = useRef(0);
+  const inputRef = useRef(null);
+  const { t } = useLanguage();
 
   useEffect(() => {
     return () => {
@@ -39,6 +43,11 @@ export default function ChatInput({ onSend }) {
     if (!trimmed) return;
     onSend(JSON.stringify({ type: 'text', text: trimmed }));
     setText('');
+  };
+
+  const addEmoji = (emoji) => {
+    setText((currentText) => `${currentText}${emoji}`);
+    inputRef.current?.focus();
   };
 
   const stopRecording = () => {
@@ -69,7 +78,7 @@ export default function ChatInput({ onSend }) {
       clearVoiceDraft();
     } catch (error) {
       const backendError = error?.response?.data?.error;
-      setRecordingError(backendError || 'Voice upload failed. Try again.');
+      setRecordingError(backendError || t('voiceUploadFailed'));
     } finally {
       setUploadingVoice(false);
     }
@@ -77,7 +86,7 @@ export default function ChatInput({ onSend }) {
 
   const startRecording = async () => {
     if (!window.MediaRecorder) {
-      setRecordingError('Voice recording is not supported in this browser.');
+      setRecordingError(t('voiceUnsupported'));
       return;
     }
 
@@ -126,7 +135,7 @@ export default function ChatInput({ onSend }) {
       mediaRecorderRef.current = recorder;
       setRecording(true);
     } catch {
-      setRecordingError('Microphone permission denied or unavailable.');
+      setRecordingError(t('microphoneDenied'));
     }
   };
 
@@ -150,20 +159,49 @@ export default function ChatInput({ onSend }) {
 
   return (
     <form className="chat-input" onSubmit={handleSubmit}>
+      <div className="emoji-picker-wrap">
+        <button
+          type="button"
+          className="chat-action"
+          onClick={() => setShowEmojiPicker((visible) => !visible)}
+          aria-label="Add emoji"
+          title="Add emoji"
+          disabled={uploadingVoice}
+        >
+          <span aria-hidden="true">😊</span>
+        </button>
+        {showEmojiPicker && (
+          <div className="emoji-picker" role="group" aria-label="Emoji picker">
+            {['😊', '😂', '😍', '❤️', '👍', '👏', '🎉', '🔥', '😢', '😡', '🙏', '✨'].map((emoji) => (
+              <button
+                key={emoji}
+                type="button"
+                className="emoji-option"
+                onClick={() => addEmoji(emoji)}
+                aria-label={`Add ${emoji}`}
+              >
+                {emoji}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+
       <button
         type="button"
         className={`chat-action ${recording ? 'recording' : ''}`}
         onClick={recording ? stopRecording : startRecording}
-        title={recording ? 'Stop recording' : 'Record voice'}
+        title={recording ? t('stopRecording') : t('recordVoice')}
         disabled={uploadingVoice}
       >
         {recording ? 'Stop' : voiceHandler()}
       </button>
 
       <input
+        ref={inputRef}
         type="text"
         value={text}
-        placeholder="Type a message..."
+        placeholder={t('typeMessage')}
         onChange={(e) => setText(e.target.value)}
         disabled={uploadingVoice}
       />
@@ -173,9 +211,9 @@ export default function ChatInput({ onSend }) {
 
       {voiceDraft && (
         <div className="voice-draft">
-          <div className="voice-draft-title">Voice note ready ({voiceDraft.durationSec}s)</div>
+          <div className="voice-draft-title">{t('voiceReady', { duration: voiceDraft.durationSec })}</div>
           <audio controls preload="metadata" src={voiceDraft.previewUrl} className="voice-draft-audio">
-            Your browser does not support audio playback.
+            {t('audioUnsupported')}
           </audio>
           <div className="voice-draft-actions">
             <button
@@ -184,7 +222,7 @@ export default function ChatInput({ onSend }) {
               onClick={sendVoiceDraft}
               disabled={uploadingVoice}
             >
-              {uploadingVoice ? 'Sending...' : voiceHandler()}
+              {uploadingVoice ? t('sending') : t('send')}
             </button>
             <button
               type="button"

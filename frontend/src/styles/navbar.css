@@ -20,6 +20,14 @@
     letter-spacing: -0.01em;
 }
 
+.navbar-logo {
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    object-fit: cover;
+    display: block;
+}
+
 .navbar-brand::before {
     content: '';
     color: var(--accent);

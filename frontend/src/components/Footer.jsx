@@ -1,7 +1,9 @@
-import gioImg from '../assets/gio.png'; 
+import { useLanguage } from '../contexts/LanguageContext';
+import chatImg from '../assets/chat.jpeg';
 
 export default function Footer() {
   const year = new Date().getFullYear();
+  const { t } = useLanguage();
 
   return (
     <footer className="app-footer">
@@ -9,32 +11,31 @@ export default function Footer() {
       
       <div className="footer-content">
         <div className="footer-brand">
-          <div className="footer-logo">
-            {/* <img className='img-round' src={gioImg} alt="giochat" /> */}
-            <span className='giochat'>GIOCHAT</span>
-          </div>
+          {/* <div className="footer-logo">
+            <img className="img-round" src={chatImg} alt="GioChat" />
+          </div> */}
           <p className="footer-tagline">
-            Connect instantly. Chat securely. <br />Built for real friendships.
+            {t('connectTagline')} <br />{t('friendshipTagline')}
           </p>
         </div>
 
         <div className="footer-links">
           <div className="footer-col">
-            <h4>Product</h4>
-            <a href="/friends">Friends</a>
-            <a href="/settings">Settings</a>
-            <a href="#">Features</a>
+            <h4>{t('product')}</h4>
+            <a href="/friends">{t('friends')}</a>
+            <a href="/settings">{t('settings')}</a>
+            <a href="#">{t('features')}</a>
           </div>
           <div className="footer-col">
-            <h4>Support</h4>
-            <a href="#">Help Center</a>
-            <a href="#">Privacy</a>
-            <a href="#">Terms</a>
+            <h4>{t('support')}</h4>
+            <a href="#">{t('helpCenter')}</a>
+            <a href="#">{t('privacy')}</a>
+            <a href="#">{t('terms')}</a>
           </div>
         </div>
 
         <div className="footer-social">
-          <h4>Stay connected</h4>
+          <h4>{t('stayConnected')}</h4>
           <div className="social-icons">
             <a href="https://github.com/stevekari" aria-label="github"><i className="fa-brands fa-github"></i></a>
             <a href="https://www.linkedin.com/in/stephen-karikari/" aria-label="twitter"><i className="fa-brands fa-x-twitter"></i></a>
@@ -45,8 +46,8 @@ export default function Footer() {
       </div>
 
       <div className="footer-bottom">
-        <p>© {year} <span className="footer-steve">Steve</span>. All rights reserved.</p>
-        <p className="footer-made">Crafted with <i className="fa-solid fa-heart"></i> by Steve</p>
+        <p>© {year} <span className="footer-steve">Steve</span>. {t('allRights')}</p>
+        <p className="footer-made">{t('crafted')} <i className="fa-solid fa-heart"></i> by Steve</p>
       </div>
     </footer>
   );

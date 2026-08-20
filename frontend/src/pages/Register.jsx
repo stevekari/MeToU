@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { register } from '../api/authApi';
+import { useLanguage } from '../contexts/LanguageContext';
 
 export default function Register({ onLogin }) {
   const [username, setUsername] = useState('');
@@ -8,6 +9,7 @@ export default function Register({ onLogin }) {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const navigate = useNavigate();
+  const { t } = useLanguage();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -17,19 +19,19 @@ export default function Register({ onLogin }) {
       onLogin(response);
       navigate('/friends');
     } catch (err) {
-      setError(err.response?.data || 'Registration failed');
+      setError(err.response?.data || t('registrationFailed'));
     }
   };
 
   return (
     <div className="auth-page">
       <form className="auth-card" onSubmit={handleSubmit}>
-        <h1>Create your account</h1>
+        <h1>{t('createAccount')}</h1>
 
-        <label>Username</label>
+        <label>{t('username')}</label>
         <input value={username} onChange={(e) => setUsername(e.target.value)} required />
 
-        <label>Email</label>
+        <label>{t('email')}</label>
         <input
           type="email"
           value={email}
@@ -37,7 +39,7 @@ export default function Register({ onLogin }) {
           required
         />
 
-        <label>Password</label>
+        <label>{t('password')}</label>
         <input
           type="password"
           value={password}
@@ -47,10 +49,10 @@ export default function Register({ onLogin }) {
 
         {error && <div className="auth-error">{String(error)}</div>}
 
-        <button type="submit">Register</button>
+        <button type="submit">{t('register')}</button>
 
         <p className="auth-switch">
-          Already have an account? <Link to="/login"> <span>Log in</span></Link>
+          {t('haveAccount')} <Link to="/login"> <span>{t('login')}</span></Link>
         </p>
       </form>
     </div>

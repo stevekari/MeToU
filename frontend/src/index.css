@@ -116,13 +116,3 @@ a {
   object-fit: cover;
   opacity: .7;
 }
-
-.giochat {
-  color: var(--success);
-  font-family: Verdana, Geneva, Tahoma, sans-serif;
-}
-
-.giochat:hover {
-  color: white;
-  text-shadow: 3px 2px 42px var(--warn);
-}

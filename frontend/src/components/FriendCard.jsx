@@ -1,21 +1,22 @@
 import { useSelector } from 'react-redux';
 import { resolveAvatarUrl } from '../utils/avatarUrl';
 import { parseMessageContent } from '../utils/messageContent';
+import { useLanguage } from '../contexts/LanguageContext';
 
-function formatPreview(raw) {
-  if (!raw) return 'Start a conversation';
+function formatPreview(raw, t) {
+  if (!raw) return t('startConversation');
   try {
     const parsed = typeof raw === 'string'? JSON.parse(raw) : raw;
     // if it's already parsed by parseMessageContent
     const content = parsed.type? parsed : parseMessageContent(typeof raw === 'string'? raw : JSON.stringify(raw));
 
-    if (content.type === 'audio') return '🎤 Voice message';
-    if (content.type === 'image') return '🖼️ Photo';
+    if (content.type === 'audio') return t('voiceMessage');
+    if (content.type === 'image') return t('photo');
     if (content.type === 'text') return content.text || raw;
-    return content.text || 'New message';
+    return content.text || t('newMessage');
   } catch {
     // plain string fallback
-    return typeof raw === 'string'? raw : 'New message';
+    return typeof raw === 'string'? raw : t('newMessage');
   }
 }
 
@@ -24,6 +25,7 @@ export default function FriendCard({ friend, lastMessage, lastMessageAt, unreadC
   const onlineIds = useSelector(s => s.presence?.onlineIds || []);
   const typingMap = useSelector(s => s.presence?.typing || {});
   const lastSeenMap = useSelector(s => s.presence?.lastSeen || {});
+  const { t } = useLanguage();
 
   const isOnline = onlineIds.includes(friendId);
   const isTyping = typingMap[conversationId] === friendId || typingMap[friendId] === friendId;
@@ -35,7 +37,7 @@ export default function FriendCard({ friend, lastMessage, lastMessageAt, unreadC
     <div className={`friend-card ${active? 'active' : ''}`} onClick={onClick}>
       <div className="friend-avatar-wrap">
         <img className="friend-avatar" src={avatarSrc} alt={friend.username} />
-        <span className={`online-dot ${isOnline? 'online' : ''}`}></span>
+        {isOnline && <span className="online-dot online" aria-label="Online"></span>}
       </div>
 
       <div className="friend-info">
@@ -46,13 +48,13 @@ export default function FriendCard({ friend, lastMessage, lastMessageAt, unreadC
 
         <div className="friend-bottom">
           <div className={`friend-preview ${isTyping? 'typing' : ''}`}>
-            {isTyping? <span className="typing-text">typing...</span> : formatPreview(lastMessage)}
+            {isTyping? <span className="typing-text">{t('typing')}</span> : formatPreview(lastMessage, t)}
           </div>
           {unreadCount > 0 && <div className="unread-badge">{unreadCount > 9? '9+' : unreadCount}</div>}
         </div>
 
         {!isOnline &&!isTyping && lastSeenMap[friendId] && (
-          <div className="last-seen">last seen {new Date(lastSeenMap[friendId]).toLocaleTimeString()}</div>
+          <div className="last-seen">{t('lastSeen')} {new Date(lastSeenMap[friendId]).toLocaleTimeString()}</div>
         )}
       </div>
     </div>

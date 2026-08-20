@@ -5,11 +5,13 @@ import { updateProfile } from '../api/userApi';
 import { uploadMedia } from '../api/mediaApi';
 import { resolveAvatarUrl } from '../utils/avatarUrl';
 import { useTheme } from '../contexts/ThemeContext.jsx';
+import { useLanguage } from '../contexts/LanguageContext';
 
 export default function Settings({ user, onProfileUpdate }) {
   const navigate = useNavigate();
   const { theme, toggleTheme } = useTheme();
   const onlineIds = useSelector(s => s.presence?.onlineIds || []);
+  const { language, setLanguage, languageOptions, t } = useLanguage();
 
   // FIX 1: safe initial state + sync when user prop changes
   const [username, setUsername] = useState(user?.username || '');
@@ -37,11 +39,11 @@ export default function Settings({ user, onProfileUpdate }) {
 
     const allowed = new Set(['image/png', 'image/jpeg', 'image/jpg']);
     if (!allowed.has(file.type.toLowerCase())) {
-      setStatus({ type: 'error', text: 'Only PNG, JPEG, JPG allowed.' });
+      setStatus({ type: 'error', text: t('onlyImages') });
       return;
     }
     if (file.size > 3 * 1024 * 1024) {
-      setStatus({ type: 'error', text: 'Max 3MB.' });
+      setStatus({ type: 'error', text: t('maxFile') });
       return;
     }
 
@@ -50,9 +52,9 @@ export default function Settings({ user, onProfileUpdate }) {
       setStatus(null);
       const uploaded = await uploadMedia(file, 'image');
       setAvatarUrl(uploaded.url);
-      setStatus({ type: 'success', text: 'Avatar uploaded. Click Save to apply.' });
+      setStatus({ type: 'success', text: t('avatarUploaded') });
     } catch (err) {
-      setStatus({ type: 'error', text: err.response?.data?.error || err.response?.data?.message || 'Avatar upload failed.' });
+      setStatus({ type: 'error', text: err.response?.data?.error || err.response?.data?.message || t('avatarUploadFailed') });
     } finally {
       setUploadingAvatar(false);
     }
@@ -61,11 +63,11 @@ export default function Settings({ user, onProfileUpdate }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!username.trim() || username.trim().length < 3) {
-      setStatus({ type: 'error', text: 'Username must be at least 3 chars.' });
+      setStatus({ type: 'error', text: t('usernameMin') });
       return;
     }
     if (newPassword &&!currentPassword) {
-      setStatus({ type: 'error', text: 'Enter current password to set new password.' });
+      setStatus({ type: 'error', text: t('enterCurrent') });
       return;
     }
 
@@ -81,11 +83,11 @@ export default function Settings({ user, onProfileUpdate }) {
       onProfileUpdate(updated);
       setCurrentPassword('');
       setNewPassword('');
-      setStatus({ type: 'success', text: 'Profile updated!' });
+      setStatus({ type: 'success', text: t('profileUpdated') });
       // FIX: don't kick user instantly
       // navigate('/friends');
     } catch (err) {
-      const msg = err.response?.data?.error || err.response?.data?.message || err.response?.data || 'Update failed';
+      const msg = err.response?.data?.error || err.response?.data?.message || err.response?.data || t('updateFailed');
       setStatus({ type: 'error', text: typeof msg === 'string'? msg : JSON.stringify(msg) });
     } finally {
       setIsSaving(false);
@@ -95,65 +97,77 @@ export default function Settings({ user, onProfileUpdate }) {
   return (
     <div className="settings-layout">
       <aside className="settings-sidebar">
-        <button className={tab==='profile'? 'active':''} onClick={()=>setTab('profile')}><i className="fa-solid fa-user"></i> Profile</button>
-        <button className={tab==='appearance'? 'active':''} onClick={()=>setTab('appearance')}><i className="fa-solid fa-palette"></i> Appearance</button>
-        <button className={tab==='security'? 'active':''} onClick={()=>setTab('security')}><i className="fa-solid fa-lock"></i> Security</button>
+        <button className={tab==='profile'? 'active':''} onClick={()=>setTab('profile')}><i className="fa-solid fa-user"></i> {t('profile')}</button>
+        <button className={tab==='appearance'? 'active':''} onClick={()=>setTab('appearance')}><i className="fa-solid fa-palette"></i> {t('appearance')}</button>
+        <button className={tab==='security'? 'active':''} onClick={()=>setTab('security')}><i className="fa-solid fa-lock"></i> {t('security')}</button>
       </aside>
 
       <div className="settings-content">
         {tab==='profile' && (
           <form className="settings-card" onSubmit={handleSubmit}>
-            <h1>Settings</h1>
-            <p className="settings-sub">{onlineIds.length} friends online • © Steve</p>
+            <h1>{t('settings')}</h1>
+            <p className="settings-sub">{t('onlineFriends', { count: onlineIds.length })}</p>
 
             <div className="avatar-editor">
-              <img className="settings-avatar-preview" src={avatarPreview} alt="preview" />
+              <img className="settings-avatar-preview" src={avatarPreview} alt={t('preview')} />
               <div>
                 <label className="btn-file">
-                  <i className="fa-solid fa-upload"></i> Upload Avatar
+                  <i className="fa-solid fa-upload"></i> {t('uploadAvatar')}
                   <input type="file" hidden accept=".png,.jpg,.jpeg" onChange={onPickAvatar} disabled={uploadingAvatar} />
                 </label>
-                {uploadingAvatar && <div className="settings-uploading">Uploading...</div>}
+                {uploadingAvatar && <div className="settings-uploading">{t('uploading')}</div>}
               </div>
             </div>
 
-            <label>Username</label>
-            <input value={username} onChange={(e)=>setUsername(e.target.value)} placeholder="Your username" />
+            <label>{t('username')}</label>
+            <input value={username} onChange={(e)=>setUsername(e.target.value)} placeholder={t('username')} />
 
-            <label>Avatar URL <span className="muted">(auto-filled after upload)</span></label>
+            <label>{t('avatarUrl')} <span className="muted">{t('autoFilled')}</span></label>
             <input value={avatarUrl} onChange={(e)=>setAvatarUrl(e.target.value)} placeholder="https://..." />
 
             {status && <div className={`settings-status ${status.type}`}>{status.text}</div>}
 
             <div className="settings-actions">
-              <button type="submit" disabled={uploadingAvatar || isSaving}>{isSaving? 'Saving...' : 'Save changes'}</button>
-              <button type="button" className="settings-cancel" onClick={()=>navigate('/friends')}>Cancel</button>
+              <button type="submit" disabled={uploadingAvatar || isSaving}>{isSaving? t('saving') : t('saveChanges')}</button>
+              <button type="button" className="settings-cancel" onClick={()=>navigate('/friends')}>{t('cancel')}</button>
             </div>
           </form>
         )}
 
         {tab==='security' && (
           <form className="settings-card" onSubmit={handleSubmit}>
-            <h2>Change Password</h2>
-            <label>Current password</label>
-            <input type="password" value={currentPassword} onChange={(e)=>setCurrentPassword(e.target.value)} placeholder="Required only to change password" />
-            <label>New password</label>
-            <input type="password" value={newPassword} onChange={(e)=>setNewPassword(e.target.value)} placeholder="Min 6 chars" />
+            <h2>{t('changePassword')}</h2>
+            <label>{t('currentPassword')}</label>
+            <input type="password" value={currentPassword} onChange={(e)=>setCurrentPassword(e.target.value)} placeholder={t('requiredPassword')} />
+            <label>{t('newPassword')}</label>
+            <input type="password" value={newPassword} onChange={(e)=>setNewPassword(e.target.value)} placeholder={t('minPassword')} />
             {status && <div className={`settings-status ${status.type}`}>{status.text}</div>}
-            <button type="submit" disabled={isSaving}>Update password</button>
+            <button type="submit" disabled={isSaving}>{t('updatePassword')}</button>
           </form>
         )}
 
         {tab==='appearance' && (
           <div className="settings-card">
-            <h2>Appearance</h2>
+            <h2>{t('appearance')}</h2>
             <div className="setting-row">
-              <div><h4>Theme</h4><p>Switch between light and dark. Your choice is saved.</p></div>
+              <div><h4>{t('theme')}</h4><p>{t('themeDescription')}</p></div>
               <button type="button" onClick={toggleTheme} className="theme-toggle big"><i className={`fa-solid ${theme==='dark'? 'fa-sun' : 'fa-moon'}`}></i> {theme}</button>
             </div>
             <div className="setting-row">
-              <div><h4>Online status</h4><p>Let friends see you are online via WebSocket</p></div>
-              <span className="badge success">Active • {onlineIds.length} online</span>
+              <div><h4>{t('language')}</h4></div>
+              <select
+                value={language}
+                onChange={(e) => setLanguage(e.target.value)}
+                aria-label={t('language')}
+              >
+                {languageOptions.map((option) => (
+                  <option key={option.value} value={option.value}>{option.label}</option>
+                ))}
+              </select>
+            </div>
+            <div className="setting-row">
+              <div><h4>{t('onlineStatus')}</h4><p>{t('onlineDescription')}</p></div>
+              <span className="badge success">{t('activeOnline', { count: onlineIds.length })}</span>
             </div>
           </div>
         )}

@@ -34,6 +34,13 @@
     font-size: 1.05rem;
 }
 
+.friends-count {
+    color: var(--text-muted);
+    font-family: var(--font-body);
+    font-size: 0.78rem;
+    font-weight: 500;
+}
+
 .chat-sidebar input {
     margin-top: 12px;
     margin-bottom: 10px;
@@ -63,6 +70,7 @@
     background: var(--surface);
     height: calc(100dvh - 105px);
     overflow: hidden;
+    position: relative;
 }
 
 .chat-header {
@@ -85,6 +93,172 @@
     font-family: var(--font-display);
     font-size: 1.05rem;
     margin: 0;
+}
+
+.call-buttons {
+    display: flex;
+    gap: 8px;
+    margin-left: auto;
+}
+
+.call-buttons button {
+    width: 36px;
+    height: 36px;
+    border: 1px solid var(--border);
+    border-radius: 50%;
+    background: transparent;
+    color: var(--text-muted);
+}
+
+.call-buttons button:hover:not(:disabled) {
+    color: var(--success);
+    border-color: var(--success);
+}
+
+.call-buttons button:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
+.call-panel {
+    position: fixed;
+    inset: 0;
+    min-height: 100vh;
+    display: grid;
+    place-items: center;
+    overflow: hidden;
+    padding: 24px;
+    background: rgba(10, 14, 20, 0.68);
+    backdrop-filter: blur(6px);
+    z-index: 100;
+}
+
+.call-panel-content {
+    position: relative;
+    z-index: 2;
+    width: min(360px, 100%);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    justify-content: center;
+    padding: 20px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--surface);
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
+    text-align: center;
+}
+
+.call-icon {
+    color: var(--success);
+}
+
+.call-actions {
+    display: flex;
+    gap: 8px;
+    width: 100%;
+    justify-content: center;
+}
+
+.call-actions button {
+    border: 0;
+    border-radius: var(--radius-sm);
+    padding: 8px 14px;
+    color: white;
+}
+
+.call-actions button:hover {
+    filter: brightness(1.08);
+}
+
+.call-accept {
+    background: #22c55e;
+}
+
+.call-end {
+    background: var(--danger);
+}
+
+.call-error {
+    width: 100%;
+    color: var(--danger);
+    text-align: center;
+    font-size: 0.8rem;
+}
+
+.incoming-call-popup {
+    position: fixed;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    padding: 24px;
+    background: rgba(10, 14, 20, 0.68);
+    backdrop-filter: blur(6px);
+    z-index: 110;
+}
+
+.incoming-call-card {
+    width: min(340px, 100%);
+    display: flex;
+    align-items: center;
+    flex-direction: column;
+    gap: 12px;
+    padding: 28px 24px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--surface);
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
+    text-align: center;
+}
+
+.incoming-call-avatar {
+    width: 72px;
+    height: 72px;
+    display: grid;
+    place-items: center;
+    border-radius: 50%;
+    background: var(--accent);
+    color: white;
+    font-size: 1.8rem;
+    font-weight: 700;
+}
+
+.incoming-call-actions {
+    display: flex;
+    gap: 10px;
+    width: 100%;
+    margin-top: 8px;
+}
+
+.incoming-call-actions button {
+    flex: 1;
+    border: 0;
+    border-radius: var(--radius-sm);
+    padding: 11px 14px;
+    color: white;
+    font-weight: 600;
+}
+
+.remote-video {
+    width: 100%;
+    height: 100%;
+    min-height: 260px;
+    object-fit: cover;
+    background: #101318;
+}
+
+.local-video {
+    position: absolute;
+    right: 12px;
+    top: 12px;
+    width: 110px;
+    height: 82px;
+    object-fit: cover;
+    border: 2px solid white;
+    border-radius: var(--radius-sm);
+    background: #101318;
+    z-index: 3;
 }
 
 .chat-messages {
@@ -204,6 +378,41 @@
     border-color: var(--danger);
     color: var(--danger);
     animation: pulse 1s infinite;
+}
+
+.emoji-picker-wrap {
+    position: relative;
+    flex-shrink: 0;
+}
+
+.emoji-picker {
+    position: absolute;
+    bottom: 54px;
+    left: 0;
+    display: grid;
+    grid-template-columns: repeat(4, 42px);
+    gap: 4px;
+    padding: 8px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--surface);
+    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.22);
+    z-index: 20;
+}
+
+.emoji-option {
+    width: 42px;
+    height: 38px;
+    border: 0;
+    border-radius: var(--radius-sm);
+    background: transparent;
+    font-size: 1.35rem;
+    line-height: 1;
+}
+
+.emoji-option:hover,
+.emoji-option:focus-visible {
+    background: var(--surface-hi);
 }
 
 .chat-input input {

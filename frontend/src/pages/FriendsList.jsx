@@ -4,6 +4,7 @@ import { searchUsers } from "../api/userApi";
 import { getMyConversations, startConversation } from "../api/conversationApi";
 import FriendCard from "../components/FriendCard";
 import { getMessagePreview } from "../utils/messageContent";
+import { useLanguage } from '../contexts/LanguageContext';
 
 export default function FriendsList() {
   const [conversations, setConversations] = useState([]);
@@ -13,6 +14,7 @@ export default function FriendsList() {
   const [searchResults, setSearchResults] = useState([]);
   const [searchLoading, setSearchLoading] = useState(false);
   const navigate = useNavigate();
+  const { t } = useLanguage();
 
   useEffect(() => {
     getMyConversations()
@@ -65,18 +67,18 @@ export default function FriendsList() {
     openChat(friend);
   };
 
-  if (loading) return <div className="page-loading">Loading friends...</div>;
+  if (loading) return <div className="page-loading">{t('loadingFriends')}</div>;
 
   return (
     <div className="friends-page-layout">
       <aside className="chat-sidebar friends-sidebar">
-        <h2>Friends</h2>
+        <h2>{t('friends')} <span className="friends-count">({t('friendsCount', { count: conversations.length })})</span></h2>
 
         <div className="friends-search">
           <div className="search-bar">
             <input
               type="text"
-              placeholder="Search"
+              placeholder={t('search')}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               onFocus={() => setSearchFocused(true)}
@@ -87,7 +89,7 @@ export default function FriendsList() {
                 className="search-clear"
                 onMouseDown={(e) => e.preventDefault()}
                 onClick={() => setSearch("")}
-                aria-label="Clear search"
+                aria-label={t('clearSearch')}
               >
                 ×
               </button>
@@ -97,10 +99,10 @@ export default function FriendsList() {
           {showSearchPopup && (
             <div className="search-popup">
               {searchLoading && (
-                <div className="search-popup-empty">Searching...</div>
+                <div className="search-popup-empty">{t('searching')}</div>
               )}
               {!searchLoading && searchResults.length === 0 && (
-                <div className="search-popup-empty">No friends found</div>
+                <div className="search-popup-empty">{t('noFriendsFound')}</div>
               )}
               {!searchLoading &&
                 searchResults.map((friend, index) => (
@@ -120,7 +122,7 @@ export default function FriendsList() {
 
         {conversations.length === 0 && (
           <p className="empty-state">
-            No conversations yet — search a username above to start chatting.
+            {t('noConversations')}
           </p>
         )}
 
@@ -142,7 +144,7 @@ export default function FriendsList() {
 
       <section className="friends-placeholder">
         <div className="empty-state">
-          Select a friend on the left to start chatting.
+          {t('selectFriend')}
         </div>
       </section>
     </div>
