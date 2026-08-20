@@ -1,5 +1,9 @@
+import { useCallback, useEffect } from 'react';
 import { Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from './hooks/useAuth';
+import { useDispatch } from 'react-redux';
+import { addMessage, setConversations } from './store/slices/chatSlice';
+import { getMyConversations } from './api/conversationApi';
 // import { usePresenceSocket } from './hooks/usePresenceSocket'; // <-- comment this
 import Navbar from './components/Navbar';
 import Login from './pages/Login';
@@ -20,7 +24,18 @@ function RequireAuth({ isAuthenticated, children }) {
 function IncomingCallManager({ user }) {
   const location = useLocation();
   const navigate = useNavigate();
-  const { incomingCall, dismissCall, declineCall } = useIncomingCallNotifications(user?.userId);
+  const dispatch = useDispatch();
+  const handleMessage = useCallback((message) => {
+    if (String(message.senderId) !== String(user?.userId)) {
+      dispatch(addMessage({ conversationId: message.conversationId, message }));
+    }
+  }, [dispatch, user?.userId]);
+  const { incomingCall, dismissCall, declineCall } = useIncomingCallNotifications(user?.userId, handleMessage);
+
+  useEffect(() => {
+    if (!user) return;
+    getMyConversations().then((conversations) => dispatch(setConversations(conversations))).catch(() => {});
+  }, [dispatch, user]);
   const isCallChatOpen = incomingCall && location.pathname === `/chat/${incomingCall.conversationId}`;
 
   if (!incomingCall || isCallChatOpen) return null;

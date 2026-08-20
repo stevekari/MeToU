@@ -11,6 +11,8 @@ import { resolveAvatarUrl } from '../utils/avatarUrl';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useWebRTCCall } from '../hooks/useWebRTCCall';
 import CallPanel from '../components/CallPanel';
+import { useDispatch } from 'react-redux';
+import { setActiveConversation } from '../store/slices/chatSlice';
 
 export default function Chat({ currentUserId }) {
   const { conversationId } = useParams();
@@ -18,6 +20,12 @@ export default function Chat({ currentUserId }) {
   const navigate = useNavigate();
   const selectedFriend = location.state?.friend;
   const { t } = useLanguage();
+  const dispatch = useDispatch();
+
+  useEffect(() => {
+    dispatch(setActiveConversation(conversationId));
+    return () => dispatch(setActiveConversation(null));
+  }, [conversationId, dispatch]);
 
   const [messages, setMessages] = useState([]);
   const [conversations, setConversations] = useState([]);

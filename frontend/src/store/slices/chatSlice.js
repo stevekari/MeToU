@@ -9,7 +9,15 @@ const chatSlice = createSlice({
   },
   reducers: {
     setConversations: (state, action) => {
-      state.conversations = action.payload;
+      state.conversations = action.payload.reduce((items, conversation) => {
+        items[conversation.conversationId] = {
+          ...conversation,
+          lastMessage: conversation.lastMessage,
+          lastMessageAt: conversation.lastMessageTime,
+          unread: state.conversations[conversation.conversationId]?.unread || 0,
+        };
+        return items;
+      }, {});
     },
     setActiveConversation: (state, action) => {
       state.activeId = action.payload;

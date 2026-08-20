@@ -5,6 +5,8 @@ import { getMyConversations, startConversation } from "../api/conversationApi";
 import FriendCard from "../components/FriendCard";
 import { getMessagePreview } from "../utils/messageContent";
 import { useLanguage } from '../contexts/LanguageContext';
+import { useDispatch, useSelector } from 'react-redux';
+import { setConversations as setConversationState } from '../store/slices/chatSlice';
 
 export default function FriendsList() {
   const [conversations, setConversations] = useState([]);
@@ -14,11 +16,16 @@ export default function FriendsList() {
   const [searchResults, setSearchResults] = useState([]);
   const [searchLoading, setSearchLoading] = useState(false);
   const navigate = useNavigate();
+  const dispatch = useDispatch();
+  const liveConversations = useSelector((state) => state.chat.conversations);
   const { t } = useLanguage();
 
   useEffect(() => {
     getMyConversations()
-     .then(setConversations)
+     .then((items) => {
+       setConversations(items);
+      dispatch(setConversationState(items));
+     })
      .finally(() => setLoading(false));
   }, []);
 
@@ -131,7 +138,9 @@ export default function FriendsList() {
             <FriendCard
               key={conv.conversationId}
               friend={conv.otherUser}
-              lastMessage={getMessagePreview(conv.lastMessage)}
+              conversationId={conv.conversationId}
+              lastMessage={getMessagePreview(liveConversations[conv.conversationId]?.lastMessage ?? conv.lastMessage)}
+              lastMessageAt={liveConversations[conv.conversationId]?.lastMessageAt ?? conv.lastMessageTime}
               onClick={() =>
                 navigate(`/chat/${conv.conversationId}`, {
                   state: { friend: conv.otherUser },

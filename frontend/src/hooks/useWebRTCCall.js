@@ -5,6 +5,7 @@ export function useWebRTCCall({ conversationId, currentUserId, sendSignal, onSig
   const { t } = useLanguage();
   const peerRef = useRef(null);
   const localStreamRef = useRef(null);
+  const remoteStreamRef = useRef(null);
   const pendingOfferRef = useRef(null);
   const callIdRef = useRef(null);
   const pendingIceCandidatesRef = useRef([]);
@@ -35,6 +36,7 @@ export function useWebRTCCall({ conversationId, currentUserId, sendSignal, onSig
     localStreamRef.current = null;
     setLocalStream(null);
     setRemoteStream(null);
+    remoteStreamRef.current = null;
     setCallState('idle');
     setCallType(null);
     setIsRinging(true);
@@ -48,12 +50,25 @@ export function useWebRTCCall({ conversationId, currentUserId, sendSignal, onSig
       audio: true,
       video: type === 'video',
     });
-    const peer = new RTCPeerConnection({
-      iceServers: [
-        { urls: 'stun:stun.l.google.com:19302' },
-        { urls: 'stun:stun1.l.google.com:19302' },
-      ],
-    });
+    const turnUrls = (import.meta.env.VITE_TURN_URLS || import.meta.env.VITE_TURN_URL || '')
+      .split(',')
+      .map((url) => url.trim())
+      .filter(Boolean);
+    const turnUsername = import.meta.env.VITE_TURN_USERNAME;
+    const turnCredential = import.meta.env.VITE_TURN_CREDENTIAL;
+    const iceServers = [
+      { urls: 'stun:stun.l.google.com:19302' },
+      { urls: 'stun:stun1.l.google.com:19302' },
+    ];
+    if (turnUrls.length > 0 && turnUsername && turnCredential) {
+      iceServers.push({
+        urls: turnUrls,
+        username: turnUsername,
+        credential: turnCredential,
+      });
+    }
+
+    const peer = new RTCPeerConnection({ iceServers });
 
     stream.getTracks().forEach((track) => peer.addTrack(track, stream));
     peer.onicecandidate = (event) => {
@@ -65,9 +80,19 @@ export function useWebRTCCall({ conversationId, currentUserId, sendSignal, onSig
         });
       }
     };
-    peer.ontrack = (event) => setRemoteStream(event.streams[0]);
+    peer.ontrack = (event) => {
+      const stream = event.streams[0] || remoteStreamRef.current || new MediaStream();
+      if (!event.streams[0]) stream.addTrack(event.track);
+      remoteStreamRef.current = stream;
+      setRemoteStream(stream);
+    };
     peer.onconnectionstatechange = () => {
-      if (['failed', 'closed'].includes(peer.connectionState)) closePeer(false);
+      if (peer.connectionState === 'failed') {
+        setError(t('connectionError'));
+      } else if (peer.connectionState === 'connected') {
+        setError('');
+        setCallState('connected');
+      }
     };
 
     peerRef.current = peer;
@@ -75,7 +100,7 @@ export function useWebRTCCall({ conversationId, currentUserId, sendSignal, onSig
     setLocalStream(stream);
     setCallType(type);
     return peer;
-  }, [closePeer, sendSignal]);
+  }, [closePeer, sendSignal, t]);
 
   const startCall = useCallback(async (type) => {
     if (callState !== 'idle') return;

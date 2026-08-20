@@ -4,10 +4,15 @@ import SockJS from 'sockjs-client';
 import { getMyConversations } from '../api/conversationApi';
 import { getWsUrl } from '../utils/apiBaseUrl';
 
-export function useIncomingCallNotifications(userId) {
+export function useIncomingCallNotifications(userId, onMessage) {
   const clientRef = useRef(null);
+  const onMessageRef = useRef(onMessage);
   const [incomingCall, setIncomingCall] = useState(null);
   const [conversations, setConversations] = useState([]);
+
+  useEffect(() => {
+    onMessageRef.current = onMessage;
+  }, [onMessage]);
 
   useEffect(() => {
     if (!userId) return undefined;
@@ -37,6 +42,10 @@ export function useIncomingCallNotifications(userId) {
         conversations.forEach((conversation) => {
           client.subscribe(`/topic/conversation.${conversation.conversationId}`, (frame) => {
             const signal = JSON.parse(frame.body);
+            if (!signal.callType) {
+              onMessageRef.current?.(signal);
+              return;
+            }
             if (signal.callType === 'ice-candidate' && String(signal.senderId) !== String(userId)) {
               setIncomingCall((currentCall) => {
                 if (!currentCall || currentCall.callId !== signal.callId) return currentCall;

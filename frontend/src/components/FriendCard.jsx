@@ -25,13 +25,17 @@ export default function FriendCard({ friend, lastMessage, lastMessageAt, unreadC
   const onlineIds = useSelector(s => s.presence?.onlineIds || []);
   const typingMap = useSelector(s => s.presence?.typing || {});
   const lastSeenMap = useSelector(s => s.presence?.lastSeen || {});
+  const storedConversation = useSelector((state) => conversationId ? state.chat?.conversations?.[conversationId] : null);
   const { t } = useLanguage();
 
   const isOnline = onlineIds.includes(friendId);
   const isTyping = typingMap[conversationId] === friendId || typingMap[friendId] === friendId;
   const avatarSrc = resolveAvatarUrl(friend.avatarUrl || friend.avatar, friend.username);
+  const visibleUnreadCount = storedConversation?.unread ?? unreadCount;
+  const visibleLastMessage = storedConversation?.lastMessage ?? lastMessage;
+  const visibleLastMessageAt = storedConversation?.lastMessageAt ?? lastMessageAt;
 
-  const time = lastMessageAt? new Date(lastMessageAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
+  const time = visibleLastMessageAt? new Date(visibleLastMessageAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
 
   return (
     <div className={`friend-card ${active? 'active' : ''}`} onClick={onClick}>
@@ -48,9 +52,9 @@ export default function FriendCard({ friend, lastMessage, lastMessageAt, unreadC
 
         <div className="friend-bottom">
           <div className={`friend-preview ${isTyping? 'typing' : ''}`}>
-            {isTyping? <span className="typing-text">{t('typing')}</span> : formatPreview(lastMessage, t)}
+            {isTyping? <span className="typing-text">{t('typing')}</span> : formatPreview(visibleLastMessage, t)}
           </div>
-          {unreadCount > 0 && <div className="unread-badge">{unreadCount > 9? '9+' : unreadCount}</div>}
+          {visibleUnreadCount > 0 && <div className="unread-badge">{visibleUnreadCount > 99 ? '99+' : visibleUnreadCount}</div>}
         </div>
 
         {!isOnline &&!isTyping && lastSeenMap[friendId] && (

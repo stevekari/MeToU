@@ -47,6 +47,7 @@ export default function CallPanel({ callState, callType, isRinging, localStream,
 
   useEffect(() => {
     if (remoteVideoRef.current) remoteVideoRef.current.srcObject = remoteStream || null;
+    if (remoteVideoRef.current && remoteStream) remoteVideoRef.current.play().catch(() => {});
     if (remoteAudioRef.current) {
       remoteAudioRef.current.srcObject = remoteStream || null;
       if (remoteStream) remoteAudioRef.current.play().catch(() => {});
