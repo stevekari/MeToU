@@ -30,6 +30,31 @@ npm run dev
 
 Starts on **http://localhost:5173**.
 
+## International voice and video calls
+
+WebRTC can connect directly when both users' networks allow it. For reliable calls between different countries, mobile carriers, and restrictive Wi-Fi networks, configure a public TURN relay before building the frontend. Use a managed TURN provider or run coturn on a server with a public IP.
+
+Copy `frontend/.env.example` to `frontend/.env.production` and set:
+
+```
+VITE_TURN_URLS=turn:turn.example.com:3478,turns:turn.example.com:5349
+VITE_TURN_USERNAME=your-turn-username
+VITE_TURN_CREDENTIAL=your-turn-credential
+```
+
+The TURN server must allow UDP/TCP port `3478` and TLS port `5349` when using `turns:`. Rebuild and redeploy the frontend after changing these values. Never commit real TURN credentials; browser builds expose these values to users by design, so use short-lived or restricted TURN credentials from your provider.
+
+For this repository's single-image Fly deployment, pass the provider values as Docker build arguments:
+
+```
+fly deploy \
+	--build-arg VITE_TURN_URLS="turn:turn.example.com:3478,turns:turn.example.com:5349" \
+	--build-arg VITE_TURN_USERNAME="your-username" \
+	--build-arg VITE_TURN_CREDENTIAL="your-credential"
+```
+
+The values come from your TURN provider dashboard. Common options include Metered, Twilio Network Traversal, Xirsys, or a coturn server on a public VPS. A normal app server URL, database password, or Fly secret is not a TURN URL and will not work here.
+
 ## How it works
 
 1. **Register/Login** → `/auth/register`, `/auth/login` return a JWT, stored in `localStorage`.

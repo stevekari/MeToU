@@ -59,6 +59,15 @@ export function useWebRTCCall({ conversationId, currentUserId, sendSignal, onSig
     const iceServers = [
       { urls: 'stun:stun.l.google.com:19302' },
       { urls: 'stun:stun1.l.google.com:19302' },
+      {
+        urls: [
+          'turn:openrelay.metered.ca:80',
+          'turn:openrelay.metered.ca:443',
+          'turn:openrelay.metered.ca:443?transport=tcp',
+        ],
+        username: 'openrelayproject',
+        credential: 'openrelayproject',
+      },
     ];
     if (turnUrls.length > 0 && turnUsername && turnCredential) {
       iceServers.push({
@@ -68,7 +77,10 @@ export function useWebRTCCall({ conversationId, currentUserId, sendSignal, onSig
       });
     }
 
-    const peer = new RTCPeerConnection({ iceServers });
+    const peer = new RTCPeerConnection({
+      iceServers,
+      iceCandidatePoolSize: 10,
+    });
 
     stream.getTracks().forEach((track) => peer.addTrack(track, stream));
     peer.onicecandidate = (event) => {

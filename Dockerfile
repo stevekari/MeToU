@@ -6,6 +6,12 @@ WORKDIR /frontend
 COPY frontend/package*.json ./
 RUN npm install
 COPY frontend/ .
+ARG VITE_TURN_URLS=""
+ARG VITE_TURN_USERNAME=""
+ARG VITE_TURN_CREDENTIAL=""
+ENV VITE_TURN_URLS=${VITE_TURN_URLS}
+ENV VITE_TURN_USERNAME=${VITE_TURN_USERNAME}
+ENV VITE_TURN_CREDENTIAL=${VITE_TURN_CREDENTIAL}
 RUN npm run build
 
 # ============================
