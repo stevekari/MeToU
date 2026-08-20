@@ -6,7 +6,7 @@ export function parseMessageContent(rawContent) {
   try {
     const parsed = JSON.parse(rawContent);
 
-    if (parsed && typeof parsed === 'object' && typeof parsed.type === 'string') {
+    if (parsed && typeof parsed === 'object') {
       if (parsed.type === 'text') {
         return { type: 'text', text: parsed.text ?? '' };
       }
@@ -43,7 +43,7 @@ export function parseMessageContent(rawContent) {
         };
       }
 
-      if (parsed.type === 'call') {
+      if (parsed.type === 'call' || parsed.callType === 'call-end') {
         return {
           type: 'call',
           callId: parsed.callId ?? null,

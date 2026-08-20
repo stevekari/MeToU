@@ -11,7 +11,6 @@ import { resolveAvatarUrl } from '../utils/avatarUrl';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useWebRTCCall } from '../hooks/useWebRTCCall';
 import CallPanel from '../components/CallPanel';
-import { useSelector } from 'react-redux';
 
 export default function Chat({ currentUserId }) {
   const { conversationId } = useParams();
@@ -19,7 +18,6 @@ export default function Chat({ currentUserId }) {
   const navigate = useNavigate();
   const selectedFriend = location.state?.friend;
   const { t } = useLanguage();
-  const onlineIds = useSelector((state) => state.presence?.onlineIds || []);
 
   const [messages, setMessages] = useState([]);
   const [conversations, setConversations] = useState([]);
@@ -43,7 +41,6 @@ export default function Chat({ currentUserId }) {
     onSignal: callSignal,
   });
   const friendId = friend?.userId || friend?._id || friend?.id;
-  const friendIsOnline = onlineIds.some((id) => String(id) === String(friendId));
 
   useEffect(() => {
     if (selectedFriend) {
@@ -190,10 +187,10 @@ export default function Chat({ currentUserId }) {
               />
               <h2>{friend.username}</h2>
               <div className="call-buttons">
-                <button type="button" onClick={() => call.startCall('voice', friendIsOnline)} disabled={call.callState !== 'idle'} aria-label="Start voice call" title="Start voice call">
+                <button type="button" onClick={() => call.startCall('voice')} disabled={call.callState !== 'idle'} aria-label="Start voice call" title="Start voice call">
                   <i className="fa-solid fa-phone"></i>
                 </button>
-                <button type="button" onClick={() => call.startCall('video', friendIsOnline)} disabled={call.callState !== 'idle'} aria-label="Start video call" title="Start video call">
+                <button type="button" onClick={() => call.startCall('video')} disabled={call.callState !== 'idle'} aria-label="Start video call" title="Start video call">
                   <i className="fa-solid fa-video"></i>
                 </button>
               </div>

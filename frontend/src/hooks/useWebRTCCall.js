@@ -49,16 +49,25 @@ export function useWebRTCCall({ conversationId, currentUserId, sendSignal, onSig
       video: type === 'video',
     });
     const peer = new RTCPeerConnection({
-      iceServers: [{ urls: 'stun:stun.l.google.com:19302' }],
+      iceServers: [
+        { urls: 'stun:stun.l.google.com:19302' },
+        { urls: 'stun:stun1.l.google.com:19302' },
+      ],
     });
 
     stream.getTracks().forEach((track) => peer.addTrack(track, stream));
     peer.onicecandidate = (event) => {
-      if (event.candidate) sendSignal({ callType: 'ice-candidate', candidate: event.candidate });
+      if (event.candidate) {
+        sendSignal({
+          callType: 'ice-candidate',
+          callId: callIdRef.current,
+          candidate: event.candidate,
+        });
+      }
     };
     peer.ontrack = (event) => setRemoteStream(event.streams[0]);
     peer.onconnectionstatechange = () => {
-      if (['failed', 'disconnected', 'closed'].includes(peer.connectionState)) closePeer(false);
+      if (['failed', 'closed'].includes(peer.connectionState)) closePeer(false);
     };
 
     peerRef.current = peer;
@@ -68,18 +77,18 @@ export function useWebRTCCall({ conversationId, currentUserId, sendSignal, onSig
     return peer;
   }, [closePeer, sendSignal]);
 
-  const startCall = useCallback(async (type, recipientOnline = true) => {
+  const startCall = useCallback(async (type) => {
     if (callState !== 'idle') return;
     try {
       setError('');
       setCallState('calling');
-      setIsRinging(recipientOnline);
+      setIsRinging(true);
       callIdRef.current = `${currentUserId}-${Date.now()}`;
       timeoutRef.current = window.setTimeout(() => closePeer(true), 40000);
       const peer = await createPeer(type);
       const offer = await peer.createOffer();
       await peer.setLocalDescription(offer);
-      sendSignal({ callType: 'call-offer', callId: callIdRef.current, mediaType: type, ringing: recipientOnline, offer });
+      sendSignal({ callType: 'call-offer', callId: callIdRef.current, mediaType: type, ringing: true, offer });
     } catch {
       setError(t('callError'));
       closePeer(false);
@@ -92,6 +101,8 @@ export function useWebRTCCall({ conversationId, currentUserId, sendSignal, onSig
     try {
       setError('');
       callIdRef.current = offerSignal.callId;
+      pendingIceCandidatesRef.current = (offerSignal.pendingIceCandidates || [])
+        .map((candidate) => new RTCIceCandidate(candidate));
       const peer = await createPeer(offerSignal.mediaType);
       await peer.setRemoteDescription(new RTCSessionDescription(offerSignal.offer));
       const answer = await peer.createAnswer();
@@ -123,11 +134,17 @@ export function useWebRTCCall({ conversationId, currentUserId, sendSignal, onSig
       setIsRinging(true);
     } else if (onSignal.callType === 'call-answer' && peerRef.current) {
       peerRef.current.setRemoteDescription(new RTCSessionDescription(onSignal.answer))
-        .then(() => setCallState('connected'))
+        .then(async () => {
+          for (const candidate of pendingIceCandidatesRef.current) {
+            await peerRef.current.addIceCandidate(candidate).catch(() => {});
+          }
+          pendingIceCandidatesRef.current = [];
+          setCallState('connected');
+        })
         .catch(() => setError(t('connectionError')));
-    } else if (onSignal.callType === 'ice-candidate' && peerRef.current) {
+    } else if (onSignal.callType === 'ice-candidate') {
       const candidate = new RTCIceCandidate(onSignal.candidate);
-      if (peerRef.current.remoteDescription) {
+      if (peerRef.current?.remoteDescription) {
         peerRef.current.addIceCandidate(candidate).catch(() => {});
       } else {
         pendingIceCandidatesRef.current.push(candidate);

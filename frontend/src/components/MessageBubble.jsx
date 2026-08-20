@@ -3,6 +3,23 @@ import { resolveBackendUrl } from '../utils/apiBaseUrl';
 import VoiceMessage from './VoiceMessage';
 import { useLanguage } from '../contexts/LanguageContext';
 
+function formatMessageTime(timestamp) {
+  const value = Array.isArray(timestamp)
+    ? new Date(
+        timestamp[0],
+        timestamp[1] - 1,
+        timestamp[2],
+        timestamp[3] ?? 0,
+        timestamp[4] ?? 0,
+        timestamp[5] ?? 0,
+        Math.floor((timestamp[6] ?? 0) / 1000000),
+      )
+    : new Date(timestamp);
+
+  if (Number.isNaN(value.getTime())) return '';
+  return value.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+}
+
 function resolveMediaUrl(parsed) {
   const src = parsed.mediaUrl || parsed.dataUrl;
   return resolveBackendUrl(src);
@@ -10,10 +27,7 @@ function resolveMediaUrl(parsed) {
 
 export default function MessageBubble({ message, isMine }) {
   const { t } = useLanguage();
-  const time = new Date(message.timestamp).toLocaleTimeString([], {
-    hour: '2-digit',
-    minute: '2-digit',
-  });
+  const time = formatMessageTime(message.timestamp);
   const isSeen = Boolean(message.seen || message.read || message.seenAt || message.readAt);
   const parsed = parseMessageContent(message.content);
   const mediaSrc = resolveMediaUrl(parsed);

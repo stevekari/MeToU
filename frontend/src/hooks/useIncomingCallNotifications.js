@@ -37,7 +37,28 @@ export function useIncomingCallNotifications(userId) {
         conversations.forEach((conversation) => {
           client.subscribe(`/topic/conversation.${conversation.conversationId}`, (frame) => {
             const signal = JSON.parse(frame.body);
-            if (signal.callType && signal.callType === 'call-offer' && String(signal.senderId) !== String(userId)) {
+            if (signal.callType === 'ice-candidate' && String(signal.senderId) !== String(userId)) {
+              setIncomingCall((currentCall) => {
+                if (!currentCall || currentCall.callId !== signal.callId) return currentCall;
+                return {
+                  ...currentCall,
+                  pendingIceCandidates: [
+                    ...(currentCall.pendingIceCandidates || []),
+                    signal.candidate,
+                  ],
+                };
+              });
+              return;
+            }
+
+            if (signal.callType === 'call-end' && String(signal.senderId) !== String(userId)) {
+              setIncomingCall((currentCall) => (
+                currentCall?.callId === signal.callId ? null : currentCall
+              ));
+              return;
+            }
+
+            if (signal.callType === 'call-offer' && String(signal.senderId) !== String(userId)) {
               if (client.connected) {
                 client.publish({
                   destination: '/app/call.signal',
