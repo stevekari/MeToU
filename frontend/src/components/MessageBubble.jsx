@@ -31,6 +31,14 @@ export default function MessageBubble({ message, isMine }) {
           <VoiceMessage src={mediaSrc} durationSec={parsed.durationSec} isMine={isMine} />
         )}
 
+        {parsed.type === 'call' && (
+          <div className={`call-history ${parsed.status}`}>
+            <i className={`fa-solid ${parsed.mediaType === 'video' ? 'fa-video' : 'fa-phone'}`}></i>
+            <span>{t(parsed.mediaType === 'video' ? 'videoCall' : 'voiceCall')}</span>
+            <small>{t(parsed.status === 'completed' ? 'callCompleted' : 'callMissed')}</small>
+          </div>
+        )}
+
         <div className="message-meta">
           <span className="message-time">{time}</span>
           {isMine && <span className={`message-status ${isSeen ? 'seen' : ''}`}>{isSeen ? '✓✓' : '✓'}</span>}

@@ -150,6 +150,10 @@
     text-align: center;
 }
 
+.call-panel>audio {
+    display: none;
+}
+
 .call-icon {
     color: var(--success);
 }
@@ -268,7 +272,32 @@
     display: flex;
     flex-direction: column;
     gap: 4px;
+    scroll-behavior: smooth;
+    overscroll-behavior: contain;
+    scrollbar-width: thin;
+    scrollbar-color: var(--accent) transparent;
     -webkit-overflow-scrolling: touch;
+}
+
+.chat-messages::-webkit-scrollbar {
+    width: 7px;
+}
+
+.chat-messages::-webkit-scrollbar-track {
+    background: transparent;
+    margin: 8px 0;
+}
+
+.chat-messages::-webkit-scrollbar-thumb {
+    background: var(--accent);
+    border: 2px solid transparent;
+    border-radius: 999px;
+    background-clip: padding-box;
+}
+
+.chat-messages::-webkit-scrollbar-thumb:hover {
+    background: var(--accent-hover);
+    background-clip: padding-box;
 }
 
 .message-row {
@@ -303,6 +332,29 @@
     background: var(--surface-hi);
     color: var(--text);
     border-bottom-left-radius: 4px;
+}
+
+.call-history {
+    min-width: 150px;
+    display: grid;
+    grid-template-columns: auto 1fr;
+    align-items: center;
+    column-gap: 8px;
+    row-gap: 2px;
+}
+
+.call-history>i {
+    grid-row: span 2;
+    color: #22c55e;
+}
+
+.call-history.missed>i {
+    color: var(--danger);
+}
+
+.call-history small {
+    color: var(--text-muted);
+    font-size: 0.72rem;
 }
 
 .message-time {
@@ -378,6 +430,10 @@
     border-color: var(--danger);
     color: var(--danger);
     animation: pulse 1s infinite;
+}
+
+.voice-action {
+    gap: 6px;
 }
 
 .emoji-picker-wrap {

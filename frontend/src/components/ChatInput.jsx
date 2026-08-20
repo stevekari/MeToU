@@ -189,12 +189,12 @@ export default function ChatInput({ onSend }) {
 
       <button
         type="button"
-        className={`chat-action ${recording ? 'recording' : ''}`}
+        className={`chat-action voice-action ${recording ? 'recording' : ''}`}
         onClick={recording ? stopRecording : startRecording}
         title={recording ? t('stopRecording') : t('recordVoice')}
         disabled={uploadingVoice}
       >
-        {recording ? 'Stop' : voiceHandler()}
+        {recording ? <><i className="fa-solid fa-stop" aria-hidden="true"></i><span className="voice-action-label">Stop</span></> : voiceHandler()}
       </button>
 
       <input

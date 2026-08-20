@@ -1,8 +1,9 @@
 import { useEffect, useRef } from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
 
-export default function CallPanel({ callState, callType, localStream, remoteStream, error, onAccept, onEnd }) {
+export default function CallPanel({ callState, callType, isRinging, localStream, remoteStream, error, onAccept, onEnd }) {
   const remoteVideoRef = useRef(null);
+  const remoteAudioRef = useRef(null);
   const localVideoRef = useRef(null);
   const ringtoneContextRef = useRef(null);
   const { t } = useLanguage();
@@ -46,6 +47,10 @@ export default function CallPanel({ callState, callType, localStream, remoteStre
 
   useEffect(() => {
     if (remoteVideoRef.current) remoteVideoRef.current.srcObject = remoteStream || null;
+    if (remoteAudioRef.current) {
+      remoteAudioRef.current.srcObject = remoteStream || null;
+      if (remoteStream) remoteAudioRef.current.play().catch(() => {});
+    }
   }, [remoteStream]);
 
   useEffect(() => {
@@ -65,9 +70,14 @@ export default function CallPanel({ callState, callType, localStream, remoteStre
           <video ref={localVideoRef} className="local-video" autoPlay muted playsInline />
         </>
       )}
+      {!videoCall && <audio ref={remoteAudioRef} autoPlay playsInline />}
       <div className="call-panel-content">
         <i className={`fa-solid ${videoCall ? 'fa-video' : 'fa-phone'} call-icon`}></i>
-        <strong>{incoming ? t(videoCall ? 'incomingVideoCall' : 'incomingVoiceCall') : t(videoCall ? 'videoCall' : 'voiceCall')}</strong>
+        <strong>{incoming
+          ? t(videoCall ? 'incomingVideoCall' : 'incomingVoiceCall')
+          : callState === 'calling'
+            ? t(isRinging ? 'ringing' : 'calling')
+            : t(videoCall ? 'videoCall' : 'voiceCall')}</strong>
         {error && <span className="call-error">{error}</span>}
         <div className="call-actions">
           {incoming && <button type="button" className="call-accept" onClick={onAccept}>{t('accept')}</button>}

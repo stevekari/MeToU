@@ -1,6 +1,29 @@
 /* ---------- Responsive ---------- */
 
 @media (max-width: 560px) {
+    .chat-input {
+        gap: 6px;
+        padding-left: 8px;
+        padding-right: 8px;
+    }
+
+    .chat-input .chat-action,
+    .chat-input .chat-submit {
+        width: 40px;
+        min-width: 40px;
+        height: 40px;
+        padding: 0;
+    }
+
+    .chat-input .voice-action-label {
+        display: none;
+    }
+
+    .chat-input input {
+        height: 40px;
+        padding: 9px 12px;
+    }
+
     .page {
         padding: 20px 14px;
     }

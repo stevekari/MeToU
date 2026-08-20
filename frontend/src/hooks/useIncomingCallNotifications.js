@@ -37,7 +37,18 @@ export function useIncomingCallNotifications(userId) {
         conversations.forEach((conversation) => {
           client.subscribe(`/topic/conversation.${conversation.conversationId}`, (frame) => {
             const signal = JSON.parse(frame.body);
-            if (signal.callType && signal.callType === 'call-offer' && signal.senderId !== userId) {
+            if (signal.callType && signal.callType === 'call-offer' && String(signal.senderId) !== String(userId)) {
+              if (client.connected) {
+                client.publish({
+                  destination: '/app/call.signal',
+                  body: JSON.stringify({
+                    conversationId: conversation.conversationId,
+                    callType: 'call-received',
+                    callId: signal.callId,
+                    mediaType: signal.mediaType,
+                  }),
+                });
+              }
               setIncomingCall({ ...signal, conversationId: conversation.conversationId, friend: conversation.otherUser });
             }
           });
@@ -64,11 +75,22 @@ export function useIncomingCallNotifications(userId) {
         body: JSON.stringify({
           conversationId: incomingCall.conversationId,
           callType: 'call-end',
+          callId: incomingCall.callId,
+          mediaType: incomingCall.mediaType,
+          status: 'missed',
         }),
       });
     }
     setIncomingCall(null);
   }, [incomingCall]);
+
+  useEffect(() => {
+    if (!incomingCall) return undefined;
+    const timeoutId = window.setTimeout(() => {
+      declineCall();
+    }, 40000);
+    return () => window.clearTimeout(timeoutId);
+  }, [incomingCall, declineCall]);
 
   return { incomingCall, dismissCall, declineCall };
 }

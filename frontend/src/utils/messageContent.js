@@ -42,6 +42,15 @@ export function parseMessageContent(rawContent) {
           durationSec: parsed.durationSec ?? null,
         };
       }
+
+      if (parsed.type === 'call') {
+        return {
+          type: 'call',
+          callId: parsed.callId ?? null,
+          mediaType: parsed.mediaType === 'video' ? 'video' : 'voice',
+          status: parsed.status === 'completed' ? 'completed' : 'missed',
+        };
+      }
     }
   } catch {
     // Legacy plain-text messages continue rendering as text.
@@ -56,6 +65,7 @@ export function getMessagePreview(rawContent) {
   const parsed = parseMessageContent(rawContent);
   if (parsed.type === 'image') return '[Photo]';
   if (parsed.type === 'audio') return '[Voice message]';
+  if (parsed.type === 'call') return parsed.mediaType === 'video' ? '[Video call]' : '[Voice call]';
 
   const text = parsed.text?.trim() ?? '';
   return text || null;

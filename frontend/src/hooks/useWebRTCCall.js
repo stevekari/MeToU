@@ -6,14 +6,29 @@ export function useWebRTCCall({ conversationId, currentUserId, sendSignal, onSig
   const peerRef = useRef(null);
   const localStreamRef = useRef(null);
   const pendingOfferRef = useRef(null);
+  const callIdRef = useRef(null);
+  const pendingIceCandidatesRef = useRef([]);
+  const timeoutRef = useRef(null);
   const [callState, setCallState] = useState('idle');
   const [callType, setCallType] = useState(null);
+  const [isRinging, setIsRinging] = useState(true);
   const [localStream, setLocalStream] = useState(null);
   const [remoteStream, setRemoteStream] = useState(null);
   const [error, setError] = useState('');
 
   const closePeer = useCallback((notify = true) => {
-    if (notify) sendSignal({ callType: 'call-end' });
+    if (timeoutRef.current) {
+      window.clearTimeout(timeoutRef.current);
+      timeoutRef.current = null;
+    }
+    if (notify && callIdRef.current) {
+      sendSignal({
+        callType: 'call-end',
+        callId: callIdRef.current,
+        mediaType: callType || 'voice',
+        status: callState === 'connected' ? 'completed' : 'missed',
+      });
+    }
     peerRef.current?.close();
     peerRef.current = null;
     localStreamRef.current?.getTracks().forEach((track) => track.stop());
@@ -22,8 +37,11 @@ export function useWebRTCCall({ conversationId, currentUserId, sendSignal, onSig
     setRemoteStream(null);
     setCallState('idle');
     setCallType(null);
+    setIsRinging(true);
     pendingOfferRef.current = null;
-  }, [sendSignal]);
+    pendingIceCandidatesRef.current = [];
+    callIdRef.current = null;
+  }, [callState, callType, sendSignal]);
 
   const createPeer = useCallback(async (type) => {
     const stream = await navigator.mediaDevices.getUserMedia({
@@ -50,15 +68,18 @@ export function useWebRTCCall({ conversationId, currentUserId, sendSignal, onSig
     return peer;
   }, [closePeer, sendSignal]);
 
-  const startCall = useCallback(async (type) => {
+  const startCall = useCallback(async (type, recipientOnline = true) => {
     if (callState !== 'idle') return;
     try {
       setError('');
       setCallState('calling');
+      setIsRinging(recipientOnline);
+      callIdRef.current = `${currentUserId}-${Date.now()}`;
+      timeoutRef.current = window.setTimeout(() => closePeer(true), 40000);
       const peer = await createPeer(type);
       const offer = await peer.createOffer();
       await peer.setLocalDescription(offer);
-      sendSignal({ callType: 'call-offer', mediaType: type, offer });
+      sendSignal({ callType: 'call-offer', callId: callIdRef.current, mediaType: type, ringing: recipientOnline, offer });
     } catch {
       setError(t('callError'));
       closePeer(false);
@@ -70,12 +91,19 @@ export function useWebRTCCall({ conversationId, currentUserId, sendSignal, onSig
     if (!offerSignal) return;
     try {
       setError('');
+      callIdRef.current = offerSignal.callId;
       const peer = await createPeer(offerSignal.mediaType);
       await peer.setRemoteDescription(new RTCSessionDescription(offerSignal.offer));
       const answer = await peer.createAnswer();
       await peer.setLocalDescription(answer);
-      sendSignal({ callType: 'call-answer', answer });
+      for (const candidate of pendingIceCandidatesRef.current) {
+        await peer.addIceCandidate(candidate).catch(() => {});
+      }
+      pendingIceCandidatesRef.current = [];
+      sendSignal({ callType: 'call-answer', callId: callIdRef.current, answer });
       setCallState('connected');
+      timeoutRef.current && window.clearTimeout(timeoutRef.current);
+      timeoutRef.current = null;
       pendingOfferRef.current = null;
     } catch {
       setError(t('acceptCallError'));
@@ -91,22 +119,40 @@ export function useWebRTCCall({ conversationId, currentUserId, sendSignal, onSig
       pendingOfferRef.current = onSignal;
       setCallType(onSignal.mediaType);
       setCallState('incoming');
+    } else if (onSignal.callType === 'call-received' && onSignal.callId === callIdRef.current) {
+      setIsRinging(true);
     } else if (onSignal.callType === 'call-answer' && peerRef.current) {
       peerRef.current.setRemoteDescription(new RTCSessionDescription(onSignal.answer))
         .then(() => setCallState('connected'))
         .catch(() => setError(t('connectionError')));
     } else if (onSignal.callType === 'ice-candidate' && peerRef.current) {
-      peerRef.current.addIceCandidate(new RTCIceCandidate(onSignal.candidate)).catch(() => {});
+      const candidate = new RTCIceCandidate(onSignal.candidate);
+      if (peerRef.current.remoteDescription) {
+        peerRef.current.addIceCandidate(candidate).catch(() => {});
+      } else {
+        pendingIceCandidatesRef.current.push(candidate);
+      }
     } else if (onSignal.callType === 'call-end') {
       closePeer(false);
     }
   }, [callState, closePeer, conversationId, currentUserId, onSignal]);
 
-  useEffect(() => () => closePeer(false), [closePeer]);
+  useEffect(() => {
+    if (callState !== 'incoming') return undefined;
+    const timeoutId = window.setTimeout(() => closePeer(true), 40000);
+    return () => window.clearTimeout(timeoutId);
+  }, [callState, closePeer]);
+
+  useEffect(() => () => {
+    peerRef.current?.close();
+    localStreamRef.current?.getTracks().forEach((track) => track.stop());
+    if (timeoutRef.current) window.clearTimeout(timeoutRef.current);
+  }, []);
 
   return {
     callState,
     callType,
+    isRinging,
     localStream,
     remoteStream,
     error,

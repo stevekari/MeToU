@@ -8,6 +8,7 @@ import com.stevechat.entity.User;
 import com.stevechat.repository.ConversationRepository;
 import com.stevechat.repository.MessageRepository;
 import com.stevechat.repository.UserRepository;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.http.ResponseEntity;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
@@ -26,15 +27,18 @@ public class ChatWebSocketController {
     private final ConversationRepository conversationRepository;
     private final UserRepository userRepository;
     private final SimpMessagingTemplate messagingTemplate;
+    private final ObjectMapper objectMapper;
 
     public ChatWebSocketController(MessageRepository messageRepository,
                                     ConversationRepository conversationRepository,
                                     UserRepository userRepository,
-                                    SimpMessagingTemplate messagingTemplate) {
+                                    SimpMessagingTemplate messagingTemplate,
+                                    ObjectMapper objectMapper) {
         this.messageRepository = messageRepository;
         this.conversationRepository = conversationRepository;
         this.userRepository = userRepository;
         this.messagingTemplate = messagingTemplate;
+        this.objectMapper = objectMapper;
     }
 
     private Long resolveSenderId(String username) {
@@ -44,7 +48,7 @@ public class ChatWebSocketController {
     }
 
     private MessageDto persistAndBroadcast(SendMessageRequest request, Long senderId) {
-        Conversation conv = conversationRepository.findById(request.getConversationId())
+        Conversation conv = conversationRepository.findById(request.getConversationId().longValue())
                 .orElseThrow(() -> new RuntimeException("Conversation not found"));
 
         if (!conv.getUserAId().equals(senderId) && !conv.getUserBId().equals(senderId)) {
@@ -83,10 +87,34 @@ public class ChatWebSocketController {
         }
 
         signal.put("senderId", senderId);
+
+        if ("call-end".equals(signal.get("callType"))) {
+            persistCallLog(conversationIdValue, senderId, signal);
+        }
         messagingTemplate.convertAndSend(
                 "/topic/conversation." + conversationId,
                 signal
         );
+    }
+
+    private void persistCallLog(long conversationId, Long senderId, Map<String, Object> signal) {
+        try {
+            Map<String, Object> callLog = Map.of(
+                    "type", "call",
+                    "callId", signal.getOrDefault("callId", "unknown"),
+                    "mediaType", signal.getOrDefault("mediaType", "voice"),
+                    "status", signal.getOrDefault("status", "missed")
+            );
+            Message saved = messageRepository.save(
+                    new Message(conversationId, senderId, objectMapper.writeValueAsString(callLog))
+            );
+            messagingTemplate.convertAndSend(
+                    "/topic/conversation." + conversationId,
+                    new MessageDto(saved)
+            );
+        } catch (Exception error) {
+            throw new RuntimeException("Unable to save call history", error);
+        }
     }
 
     // REST fallback: same effect, useful for simple testing without a socket
