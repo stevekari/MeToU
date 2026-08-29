@@ -39,7 +39,7 @@ public class MediaController {
 
     @PostMapping("/upload")
     public ResponseEntity<?> upload(@RequestParam("file") MultipartFile file,
-                                    @RequestParam("kind") String kind) throws IOException {
+                                    @RequestParam("kind") String kind) {
         if (file.isEmpty()) {
             return ResponseEntity.badRequest().body(Map.of("error", "File is empty"));
         }
@@ -50,42 +50,75 @@ public class MediaController {
         }
 
         String rawContentType = file.getContentType();
-        if (rawContentType == null) {
-            return ResponseEntity.badRequest().body(Map.of("error", "Unknown content type"));
+        String contentType = rawContentType != null ? normalizeMimeType(rawContentType) : "";
+
+        // Fallback detection from filename if MIME type is missing or generic
+        if (contentType.isBlank() || contentType.equals("application/octet-stream")) {
+            String orig = file.getOriginalFilename();
+            if (orig != null) {
+                String ext = StringUtils.getFilenameExtension(orig);
+                if (ext != null) {
+                    switch (ext.toLowerCase(Locale.ROOT)) {
+                        case "png" -> contentType = "image/png";
+                        case "jpg", "jpeg" -> contentType = "image/jpeg";
+                        case "webp" -> contentType = "image/webp";
+                        case "gif" -> contentType = "image/gif";
+                        case "svg" -> contentType = "image/svg+xml";
+                        case "webm" -> contentType = "audio/webm";
+                        case "ogg" -> contentType = "audio/ogg";
+                        case "mp3" -> contentType = "audio/mpeg";
+                        case "m4a", "mp4" -> contentType = "audio/mp4";
+                        case "wav" -> contentType = "audio/wav";
+                    }
+                }
+            }
         }
-        String contentType = normalizeMimeType(rawContentType);
+
+        if (normalizedKind.equals("audio") && contentType.startsWith("video/webm")) {
+            contentType = "audio/webm";
+        }
 
         if (normalizedKind.equals("image") && !contentType.startsWith("image/")) {
-            return ResponseEntity.badRequest().body(Map.of("error", "Unsupported image format. Use PNG, JPEG, or JPG."));
+            // Default to image/jpeg if uploaded under kind=image
+            contentType = "image/jpeg";
         }
-        if (normalizedKind.equals("image")
-                && !contentType.equals("image/png")
-                && !contentType.equals("image/jpeg")
-                && !contentType.equals("image/jpg")) {
-            return ResponseEntity.badRequest().body(Map.of("error", "Unsupported image format. Use PNG, JPEG, or JPG."));
-        }
+
         if (normalizedKind.equals("audio") && !contentType.startsWith("audio/")) {
-            return ResponseEntity.badRequest().body(Map.of("error", "Unsupported audio format"));
+            // Default to audio/webm if uploaded under kind=audio
+            contentType = "audio/webm";
         }
 
-        String extension = getExtension(contentType, file.getOriginalFilename());
-        String fileName = Instant.now().toEpochMilli() + "-" + UUID.randomUUID() + extension;
-        Path target = uploadDir.resolve(fileName);
+        try {
+            Files.createDirectories(uploadDir);
 
-        Files.copy(file.getInputStream(), target, StandardCopyOption.REPLACE_EXISTING);
+            String extension = getExtension(contentType, file.getOriginalFilename());
+            String fileName = Instant.now().toEpochMilli() + "-" + UUID.randomUUID() + extension;
+            Path target = uploadDir.resolve(fileName).normalize();
 
-        return ResponseEntity.ok(Map.of(
-                "url", "/media/files/" + fileName,
-                "contentType", contentType,
-                "fileName", file.getOriginalFilename() == null ? fileName : file.getOriginalFilename()
-        ));
+            Files.copy(file.getInputStream(), target, StandardCopyOption.REPLACE_EXISTING);
+
+            return ResponseEntity.ok(Map.of(
+                    "url", "/media/files/" + fileName,
+                    "contentType", contentType,
+                    "fileName", file.getOriginalFilename() == null ? fileName : file.getOriginalFilename()
+            ));
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body(Map.of(
+                    "error", "Failed to store media file: " + e.getMessage()
+            ));
+        }
     }
 
     @GetMapping("/files/{fileName:.+}")
     public ResponseEntity<Resource> getFile(@PathVariable String fileName) throws MalformedURLException {
         Path filePath = uploadDir.resolve(fileName).normalize();
         if (!filePath.startsWith(uploadDir) || !Files.exists(filePath)) {
-            return ResponseEntity.notFound().build();
+            Path altPath = Paths.get("backend", "uploads").resolve(fileName).normalize().toAbsolutePath();
+            if (Files.exists(altPath)) {
+                filePath = altPath;
+            } else {
+                return ResponseEntity.notFound().build();
+            }
         }
 
         Resource resource = new UrlResource(filePath.toUri());

@@ -1,16 +1,19 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useSelector } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import { updateProfile } from '../api/userApi';
 import { uploadMedia } from '../api/mediaApi';
 import { resolveAvatarUrl } from '../utils/avatarUrl';
 import { useTheme } from '../contexts/ThemeContext.jsx';
 import { useLanguage } from '../contexts/LanguageContext';
+import { setMyStatus } from '../store/slices/presenceSlice';
 
 export default function Settings({ user, onProfileUpdate }) {
   const navigate = useNavigate();
+  const dispatch = useDispatch();
   const { theme, toggleTheme } = useTheme();
-  const onlineIds = useSelector(s => s.presence?.onlineIds || []);
+  const onlineIds = useSelector((s) => s.presence?.onlineIds || []);
+  const myStatus = useSelector((s) => s.presence?.myStatus || 'online');
   const { language, setLanguage, languageOptions, t } = useLanguage();
 
   // FIX 1: safe initial state + sync when user prop changes
@@ -166,7 +169,20 @@ export default function Settings({ user, onProfileUpdate }) {
               </select>
             </div>
             <div className="setting-row">
-              <div><h4>{t('onlineStatus')}</h4><p>{t('onlineDescription')}</p></div>
+              <div><h4>{t('myStatus')}</h4><p>{t('onlineDescription')}</p></div>
+              <select
+                value={myStatus}
+                onChange={(e) => dispatch(setMyStatus(e.target.value))}
+                className={`status-select ${myStatus}`}
+                aria-label={t('myStatus')}
+              >
+                <option value="online">🟢 {t('statusOnline')}</option>
+                <option value="busy">🟡 {t('statusBusy')}</option>
+                <option value="offline">⚪ {t('statusOffline')}</option>
+              </select>
+            </div>
+            <div className="setting-row">
+              <div><h4>{t('onlineStatus')}</h4><p>{t('onlineFriends', { count: onlineIds.length })}</p></div>
               <span className="badge success">{t('activeOnline', { count: onlineIds.length })}</span>
             </div>
           </div>

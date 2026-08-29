@@ -12,6 +12,10 @@ export function getMe() {
   return api.get('/users/me').then((res) => res.data);
 }
 
+export function getPresenceMap() {
+  return api.get('/users/presence').then((res) => res.data);
+}
+
 export function updateProfile(payload) {
   return api.put('/users/me', payload).then((res) => res.data);
 }

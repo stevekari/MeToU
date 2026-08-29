@@ -42,7 +42,7 @@ function IncomingCallManager({ user }) {
 
   const acceptCall = () => {
     navigate(`/chat/${incomingCall.conversationId}`, {
-      state: { friend: incomingCall.friend, incomingCall },
+      state: { friend: incomingCall.friend, incomingCall, autoAccept: true },
     });
     dismissCall();
   };

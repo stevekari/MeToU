@@ -1,7 +1,7 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { useLocation, useParams, useNavigate } from 'react-router-dom';
 import { getMessages, getMyConversations, startConversation } from '../api/conversationApi';
-import { searchUsers } from '../api/userApi';
+import { searchUsers, getPresenceMap } from '../api/userApi';
 import { useWebSocket } from '../hooks/useWebSocket';
 import MessageBubble from '../components/MessageBubble';
 import ChatInput from '../components/ChatInput';
@@ -11,8 +11,9 @@ import { resolveAvatarUrl } from '../utils/avatarUrl';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useWebRTCCall } from '../hooks/useWebRTCCall';
 import CallPanel from '../components/CallPanel';
-import { useDispatch } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import { setActiveConversation } from '../store/slices/chatSlice';
+import { setUserStatuses } from '../store/slices/presenceSlice';
 
 export default function Chat({ currentUserId }) {
   const { conversationId } = useParams();
@@ -37,18 +38,84 @@ export default function Chat({ currentUserId }) {
   const [loading, setLoading] = useState(true);
   const [sidebarLoading, setSidebarLoading] = useState(true);
   const [callSignal, setCallSignal] = useState(location.state?.incomingCall ?? null);
+  const messagesEndRef = useRef(null);
+
+  const scrollToBottom = useCallback((behavior = 'smooth') => {
+    messagesEndRef.current?.scrollIntoView({ behavior });
+  }, []);
+
+  useEffect(() => {
+    scrollToBottom(messages.length <= 1 ? 'auto' : 'smooth');
+  }, [messages, scrollToBottom]);
+
+  const userStatuses = useSelector((s) => s.presence?.userStatuses || {});
+  const onlineIds = useSelector((s) => s.presence?.onlineIds || []);
+
+  const sortConversations = (items) => {
+    return [...items].sort((a, b) => {
+      const timeA = new Date(a.lastMessageAt || a.lastMessageTime || a.createdAt || 0).getTime();
+      const timeB = new Date(b.lastMessageAt || b.lastMessageTime || b.createdAt || 0).getTime();
+      return timeB - timeA;
+    });
+  };
+
   const handleIncoming = useCallback((message) => {
-    setMessages((prev) => [...prev, message]);
+    setMessages((prev) => {
+      if (message.id && prev.some((m) => m.id === message.id)) {
+        return prev;
+      }
+      return [...prev, message];
+    });
+
+    setConversations((prev) => {
+      const updated = prev.map((c) =>
+        String(c.conversationId) === String(message.conversationId)
+          ? {
+              ...c,
+              lastMessage: message.content,
+              lastMessageTime: message.timestamp || new Date().toISOString(),
+              lastMessageAt: message.timestamp || new Date().toISOString(),
+            }
+          : c
+      );
+      return sortConversations(updated);
+    });
   }, []);
 
   const { sendMessage, sendCallSignal } = useWebSocket(conversationId, handleIncoming, setCallSignal);
+
+  const handleSend = useCallback((content) => {
+    sendMessage(content);
+    setConversations((prev) => {
+      const updated = prev.map((c) =>
+        String(c.conversationId) === String(conversationId)
+          ? {
+              ...c,
+              lastMessage: content,
+              lastMessageTime: new Date().toISOString(),
+              lastMessageAt: new Date().toISOString(),
+            }
+          : c
+      );
+      return sortConversations(updated);
+    });
+  }, [conversationId, sendMessage]);
+
   const call = useWebRTCCall({
     conversationId,
     currentUserId,
     sendSignal: sendCallSignal,
     onSignal: callSignal,
+    autoAccept: Boolean(location.state?.autoAccept),
   });
   const friendId = friend?.userId || friend?._id || friend?.id;
+
+  const friendExplicitStatus = friendId ? (userStatuses[String(friendId)] || userStatuses[Number(friendId)]) : null;
+  const isFriendPresent = friendId ? onlineIds.some((i) => String(i) === String(friendId)) : false;
+  const isFriendBusy = friendExplicitStatus === 'busy';
+  const isFriendOnline = friendExplicitStatus ? friendExplicitStatus === 'online' : isFriendPresent;
+  const friendStatusType = isFriendBusy ? 'busy' : isFriendOnline ? 'online' : 'offline';
+  const friendStatusLabel = isFriendBusy ? t('busy') : isFriendOnline ? t('online') : t('offline');
 
   useEffect(() => {
     if (selectedFriend) {
@@ -60,10 +127,11 @@ export default function Chat({ currentUserId }) {
     setSidebarLoading(true);
     getMyConversations()
       .then((conversationsData) => {
-        setConversations(conversationsData);
+        const sorted = sortConversations(conversationsData);
+        setConversations(sorted);
 
         if (!selectedFriend) {
-          const currentConversation = conversationsData.find(
+          const currentConversation = sorted.find(
             (c) => String(c.conversationId) === String(conversationId)
           );
           setFriend(currentConversation?.otherUser ?? null);
@@ -90,9 +158,14 @@ export default function Chat({ currentUserId }) {
     let cancelled = false;
     setSearchLoading(true);
     const timer = setTimeout(() => {
-      searchUsers(trimmedSearch)
-        .then((results) => {
-          if (!cancelled) setSearchResults(results);
+      Promise.all([searchUsers(trimmedSearch), getPresenceMap().catch(() => ({}))])
+        .then(([results, presence]) => {
+          if (!cancelled) {
+            if (presence && typeof presence === 'object') {
+              dispatch(setUserStatuses(presence));
+            }
+            setSearchResults(results);
+          }
         })
         .catch(() => {
           if (!cancelled) setSearchResults([]);
@@ -106,7 +179,7 @@ export default function Chat({ currentUserId }) {
       cancelled = true;
       clearTimeout(timer);
     };
-  }, [trimmedSearch]);
+  }, [trimmedSearch, dispatch]);
 
   const openChat = async (nextFriend) => {
     const { conversationId: nextConversationId } = await startConversation(nextFriend.id);
@@ -177,7 +250,9 @@ export default function Chat({ currentUserId }) {
               <FriendCard
                 key={conv.conversationId}
                 friend={conv.otherUser}
+                conversationId={conv.conversationId}
                 lastMessage={getMessagePreview(conv.lastMessage)}
+                lastMessageAt={conv.lastMessageAt ?? conv.lastMessageTime}
                 onClick={() => navigate(`/chat/${conv.conversationId}`, { state: { friend: conv.otherUser } })}
                 active={friend?.id === conv.otherUser?.id}
               />
@@ -189,11 +264,19 @@ export default function Chat({ currentUserId }) {
         <div className="chat-header">
           {friend && (
             <>
-              <img
-                src={resolveAvatarUrl(friend.avatarUrl, friend.username)}
-                alt={friend.username}
-              />
-              <h2>{friend.username}</h2>
+              <div className="chat-header-user">
+                <div className="friend-avatar-wrap">
+                  <img
+                    src={resolveAvatarUrl(friend.avatarUrl, friend.username)}
+                    alt={friend.username}
+                  />
+                  <span className={`online-dot ${friendStatusType}`} title={friendStatusLabel}></span>
+                </div>
+                <div className="chat-header-details">
+                  <h2>{friend.username}</h2>
+                  <span className={`chat-header-status ${friendStatusType}`}>{friendStatusLabel}</span>
+                </div>
+              </div>
               <div className="call-buttons">
                 <button type="button" onClick={() => call.startCall('voice')} disabled={call.callState !== 'idle'} aria-label="Start voice call" title="Start voice call">
                   <i className="fa-solid fa-phone"></i>
@@ -222,6 +305,7 @@ export default function Chat({ currentUserId }) {
           {messages.map((m) => (
             <MessageBubble key={m.id ?? `${m.senderId}-${m.timestamp}`} message={m} isMine={m.senderId === currentUserId} />
           ))}
+          <div ref={messagesEndRef} />
         </div>
 
         <CallPanel
@@ -231,11 +315,17 @@ export default function Chat({ currentUserId }) {
           localStream={call.localStream}
           remoteStream={call.remoteStream}
           error={call.error}
+          friend={friend}
+          isMutedAudio={call.isMutedAudio}
+          isMutedVideo={call.isMutedVideo}
+          toggleMuteAudio={call.toggleMuteAudio}
+          toggleMuteVideo={call.toggleMuteVideo}
+          switchCamera={call.switchCamera}
           onAccept={call.acceptCall}
           onEnd={call.callState === 'incoming' ? call.rejectCall : call.endCall}
         />
 
-        <ChatInput onSend={sendMessage} />
+        <ChatInput onSend={handleSend} />
       </section>
     </div>
   );

@@ -117,6 +117,31 @@ public class ChatWebSocketController {
         }
     }
 
+    private static final java.util.concurrent.ConcurrentHashMap<Long, String> userStatuses = new java.util.concurrent.ConcurrentHashMap<>();
+
+    public static java.util.Map<Long, String> getUserStatuses() {
+        return java.util.Collections.unmodifiableMap(userStatuses);
+    }
+
+    @MessageMapping("/presence.status")
+    public void updatePresenceStatus(Map<String, Object> payload, Principal principal) {
+        Long senderId = resolveSenderId(principal.getName());
+        String status = (String) payload.getOrDefault("status", "online");
+        userStatuses.put(senderId, status);
+
+        Map<String, Object> event = Map.of(
+                "userId", senderId,
+                "status", status,
+                "lastSeen", System.currentTimeMillis()
+        );
+        messagingTemplate.convertAndSend("/topic/presence", event);
+    }
+
+    @MessageMapping("/presence.get")
+    public void getPresenceList(Principal principal) {
+        messagingTemplate.convertAndSend("/topic/presence.list", userStatuses);
+    }
+
     // REST fallback: same effect, useful for simple testing without a socket
     @PostMapping("/messages/send")
     public ResponseEntity<?> sendViaRest(@RequestBody SendMessageRequest request, Authentication auth) {

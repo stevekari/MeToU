@@ -1,54 +1,80 @@
-import { useEffect, useRef } from 'react';
+import { useEffect } from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
+import { callSounds } from '../utils/callSounds';
+import { resolveAvatarUrl } from '../utils/avatarUrl';
 
 export default function IncomingCallPopup({ call, onAccept, onDecline }) {
-  const ringtoneContextRef = useRef(null);
   const { t } = useLanguage();
   const videoCall = call.mediaType === 'video';
 
   useEffect(() => {
-    const AudioContext = window.AudioContext || window.webkitAudioContext;
-    if (!AudioContext) return undefined;
+    callSounds.startIncomingRingtone();
 
-    const ring = () => {
-      const context = ringtoneContextRef.current || new AudioContext();
-      ringtoneContextRef.current = context;
-      const now = context.currentTime;
-      [660, 880].forEach((frequency, index) => {
-        const oscillator = context.createOscillator();
-        const gain = context.createGain();
-        oscillator.frequency.value = frequency;
-        oscillator.type = 'sine';
-        gain.gain.setValueAtTime(0.0001, now + index * 0.16);
-        gain.gain.exponentialRampToValueAtTime(0.12, now + index * 0.16 + 0.02);
-        gain.gain.exponentialRampToValueAtTime(0.0001, now + index * 0.16 + 0.14);
-        oscillator.connect(gain).connect(context.destination);
-        oscillator.start(now + index * 0.16);
-        oscillator.stop(now + index * 0.16 + 0.15);
-      });
-    };
+    // Show browser notification if permitted
+    if ('Notification' in window && Notification.permission === 'granted') {
+      try {
+        const callerName = call.friend?.username || 'Someone';
+        const title = videoCall ? t('incomingVideoCall') : t('incomingVoiceCall');
+        new Notification(title, {
+          body: `${callerName} is calling you`,
+          icon: '/favicon.svg',
+          tag: `call-${call.callId}`,
+          renotify: true,
+        });
+      } catch {}
+    }
 
-    ring();
-    const intervalId = window.setInterval(ring, 1800);
     return () => {
-      window.clearInterval(intervalId);
-      ringtoneContextRef.current?.close().catch(() => {});
-      ringtoneContextRef.current = null;
+      callSounds.stop();
     };
-  }, []);
+  }, [call.callId, call.friend?.username, t, videoCall]);
+
+  const handleAccept = () => {
+    callSounds.stop();
+    onAccept();
+  };
+
+  const handleDecline = () => {
+    callSounds.stop();
+    callSounds.playEndedSound();
+    onDecline();
+  };
+
+  const avatarSrc = resolveAvatarUrl(call.friend?.avatarUrl, call.friend?.username);
 
   return (
     <div className="incoming-call-popup" role="dialog" aria-modal="true" aria-label={videoCall ? t('incomingVideoCall') : t('incomingVoiceCall')}>
-      <div className="incoming-call-card">
-        <div className="incoming-call-avatar">
-          {call.friend?.username?.charAt(0)?.toUpperCase() || '?'}
+      <div className="incoming-call-card ringing-pulse">
+        <div className="incoming-call-avatar-wrapper">
+          {call.friend?.avatarUrl ? (
+            <img
+              src={avatarSrc}
+              alt={call.friend?.username || 'Caller'}
+              className="incoming-call-avatar-img"
+            />
+          ) : (
+            <div className="incoming-call-avatar">
+              {call.friend?.username?.charAt(0)?.toUpperCase() || '?'}
+            </div>
+          )}
+          <span className="ringing-waves"></span>
         </div>
-        <i className={`fa-solid ${videoCall ? 'fa-video' : 'fa-phone'} call-icon`}></i>
-        <strong>{call.friend?.username || 'Someone'}</strong>
-        <span>{t(videoCall ? 'incomingVideoCall' : 'incomingVoiceCall')}</span>
+
+        <div className="incoming-call-type-badge">
+          <i className={`fa-solid ${videoCall ? 'fa-video' : 'fa-phone'} call-icon`}></i>
+          <span>{t(videoCall ? 'videoCall' : 'voiceCall')}</span>
+        </div>
+
+        <strong className="incoming-caller-name">{call.friend?.username || 'Someone'}</strong>
+        <span className="incoming-call-status">{t(videoCall ? 'incomingVideoCall' : 'incomingVoiceCall')}</span>
+
         <div className="incoming-call-actions">
-          <button type="button" className="call-accept" onClick={onAccept}>{t('accept')}</button>
-          <button type="button" className="call-end" onClick={onDecline}>{t('decline')}</button>
+          <button type="button" className="call-accept" onClick={handleAccept}>
+            <i className={`fa-solid ${videoCall ? 'fa-video' : 'fa-phone'}`}></i> {t('accept')}
+          </button>
+          <button type="button" className="call-end" onClick={handleDecline}>
+            <i className="fa-solid fa-phone-slash"></i> {t('decline')}
+          </button>
         </div>
       </div>
     </div>

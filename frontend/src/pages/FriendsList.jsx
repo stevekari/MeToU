@@ -1,12 +1,13 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { searchUsers } from "../api/userApi";
+import { searchUsers, getPresenceMap } from "../api/userApi";
 import { getMyConversations, startConversation } from "../api/conversationApi";
 import FriendCard from "../components/FriendCard";
 import { getMessagePreview } from "../utils/messageContent";
 import { useLanguage } from '../contexts/LanguageContext';
 import { useDispatch, useSelector } from 'react-redux';
 import { setConversations as setConversationState } from '../store/slices/chatSlice';
+import { setUserStatuses } from '../store/slices/presenceSlice';
 
 export default function FriendsList() {
   const [conversations, setConversations] = useState([]);
@@ -24,10 +25,18 @@ export default function FriendsList() {
     getMyConversations()
      .then((items) => {
        setConversations(items);
-      dispatch(setConversationState(items));
+       dispatch(setConversationState(items));
      })
      .finally(() => setLoading(false));
-  }, []);
+  }, [dispatch]);
+
+  const sortedConversations = useMemo(() => {
+    return [...conversations].sort((a, b) => {
+      const timeA = new Date(liveConversations[a.conversationId]?.lastMessageAt ?? a.lastMessageTime ?? a.createdAt ?? 0).getTime();
+      const timeB = new Date(liveConversations[b.conversationId]?.lastMessageAt ?? b.lastMessageTime ?? b.createdAt ?? 0).getTime();
+      return timeB - timeA;
+    });
+  }, [conversations, liveConversations]);
 
   const trimmedSearch = search.trim();
 
@@ -39,14 +48,19 @@ export default function FriendsList() {
     let cancelled = false;
     setSearchLoading(true);
     const timer = setTimeout(() => {
-      searchUsers(trimmedSearch)
-       .then((results) => {
-          if (!cancelled) setSearchResults(results);
+      Promise.all([searchUsers(trimmedSearch), getPresenceMap().catch(() => ({}))])
+        .then(([results, presence]) => {
+          if (!cancelled) {
+            if (presence && typeof presence === 'object') {
+              dispatch(setUserStatuses(presence));
+            }
+            setSearchResults(results);
+          }
         })
-       .catch(() => {
+        .catch(() => {
           if (!cancelled) setSearchResults([]);
         })
-       .finally(() => {
+        .finally(() => {
           if (!cancelled) setSearchLoading(false);
         });
     }, 250);
@@ -55,7 +69,7 @@ export default function FriendsList() {
       cancelled = true;
       clearTimeout(timer);
     };
-  }, [trimmedSearch]);
+  }, [trimmedSearch, dispatch]);
 
   const openChat = async (friend) => {
     try {
@@ -134,7 +148,7 @@ export default function FriendsList() {
         )}
 
         <div className="friends-list">
-          {conversations.map((conv) => (
+          {sortedConversations.map((conv) => (
             <FriendCard
               key={conv.conversationId}
               friend={conv.otherUser}

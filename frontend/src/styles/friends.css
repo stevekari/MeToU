@@ -116,16 +116,27 @@
     position: absolute;
     bottom: 0;
     right: 0;
-    width: 11px;
-    height: 11px;
+    width: 12px;
+    height: 12px;
     border-radius: 50%;
-    background: #059015;
+    background: #94a3b8;
     border: 2px solid var(--surface);
+    transition: background 0.2s ease, box-shadow 0.2s ease;
 }
 
 .online-dot.online {
     background: #22c55e;
-    box-shadow: 0 0 0 4px rgba(78, 203, 143, 0.18);
+    box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.28);
+}
+
+.online-dot.busy {
+    background: #eab308;
+    box-shadow: 0 0 0 3px rgba(234, 179, 8, 0.28);
+}
+
+.online-dot.offline {
+    background: #94a3b8;
+    box-shadow: 0 0 0 3px rgba(148, 163, 184, 0.2);
 }
 
 .friend-info {
@@ -178,17 +189,55 @@
     font-style: italic;
 }
 
+.friend-status-pill {
+    display: inline-flex;
+    align-items: center;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: capitalize;
+}
+
+.friend-status-pill.online {
+    color: #22c55e;
+}
+
+.friend-status-pill.busy {
+    color: #eab308;
+}
+
+.friend-status-pill.offline {
+    color: var(--text-muted);
+}
+
 .unread-badge {
-    background: #dc2626;
-    color: white;
+    background: #25D366;
+    color: #ffffff;
     font-size: 11px;
     font-weight: 700;
+    line-height: 1;
     min-width: 20px;
     height: 20px;
-    border-radius: 20px;
-    display: grid;
-    place-items: center;
-    padding: 0 6px;
+    border-radius: 10px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 5.5px;
+    box-shadow: 0 2px 6px rgba(37, 211, 102, 0.35);
+    flex-shrink: 0;
+    animation: badgePop 0.22s cubic-bezier(0.175, 0.885, 0.32, 1.275) both;
+    user-select: none;
+}
+
+@keyframes badgePop {
+    from {
+        opacity: 0;
+        transform: scale(0.6);
+    }
+
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
 }
 
 .last-seen {

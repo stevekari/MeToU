@@ -62,6 +62,11 @@ public class UserController {
         return new UserDto(currentUser(auth));
     }
 
+    @GetMapping("/presence")
+    public java.util.Map<Long, String> getPresence() {
+        return ChatWebSocketController.getUserStatuses();
+    }
+
     @PutMapping("/me")
     public ResponseEntity<?> updateProfile(@RequestBody UpdateProfileRequest request, Authentication auth) {
         User me = currentUser(auth);

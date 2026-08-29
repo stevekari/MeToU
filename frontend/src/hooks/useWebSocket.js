@@ -1,12 +1,16 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
 import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
 import { getWsUrl } from '../utils/apiBaseUrl';
 import { sendMessageRest } from '../api/conversationApi';
+import { setUserStatus, setUserStatuses } from '../store/slices/presenceSlice';
 
 // Connects to the STOMP broker and subscribes to a single conversation's topic.
 // Call sendMessage(content) to publish; onMessage(msg) fires for every incoming frame.
 export function useWebSocket(conversationId, onMessage, onCallSignal) {
+  const dispatch = useDispatch();
+  const myStatus = useSelector((state) => state.presence?.myStatus || 'online');
   const clientRef = useRef(null);
   const onMessageRef = useRef(onMessage);
   const onCallSignalRef = useRef(onCallSignal);
@@ -32,6 +36,39 @@ export function useWebSocket(conversationId, onMessage, onCallSignal) {
       reconnectDelay: 3000,
       onConnect: () => {
         setConnected(true);
+
+        // Presence subscriptions
+        client.subscribe('/topic/presence', (frame) => {
+          try {
+            const body = JSON.parse(frame.body);
+            if (body.userId) {
+              dispatch(setUserStatus(body));
+            }
+          } catch (e) {
+            console.warn('Presence parse error', e);
+          }
+        });
+
+        client.subscribe('/topic/presence.list', (frame) => {
+          try {
+            const body = JSON.parse(frame.body);
+            dispatch(setUserStatuses(body));
+          } catch (e) {
+            console.warn('Presence list parse error', e);
+          }
+        });
+
+        // Publish my status
+        const currentSavedStatus = localStorage.getItem('gio_user_status') || 'online';
+        client.publish({
+          destination: '/app/presence.status',
+          body: JSON.stringify({ status: currentSavedStatus }),
+        });
+        client.publish({
+          destination: '/app/presence.get',
+          body: '{}',
+        });
+
         client.subscribe(`/topic/conversation.${conversationId}`, (frame) => {
           const body = JSON.parse(frame.body);
           if (body.callType) {
@@ -63,7 +100,16 @@ export function useWebSocket(conversationId, onMessage, onCallSignal) {
       pendingCallSignalsRef.current = [];
       setConnected(false);
     };
-  }, [conversationId]);
+  }, [conversationId, dispatch]);
+
+  useEffect(() => {
+    if (clientRef.current?.connected) {
+      clientRef.current.publish({
+        destination: '/app/presence.status',
+        body: JSON.stringify({ status: myStatus }),
+      });
+    }
+  }, [myStatus]);
 
   const sendMessage = useCallback(
     (content) => {

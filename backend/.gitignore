@@ -1,2 +1,8 @@
 target/
 data/
+uploads/
+**/uploads/
+**/uploads/**
+*.mv.db
+*.trace.db
+.DS_Store

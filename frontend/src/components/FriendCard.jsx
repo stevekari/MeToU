@@ -1,7 +1,8 @@
-import { useSelector } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import { resolveAvatarUrl } from '../utils/avatarUrl';
 import { parseMessageContent } from '../utils/messageContent';
 import { useLanguage } from '../contexts/LanguageContext';
+import { markAsRead } from '../store/slices/chatSlice';
 
 function formatPreview(raw, t) {
   if (!raw) return t('startConversation');
@@ -21,27 +22,49 @@ function formatPreview(raw, t) {
 }
 
 export default function FriendCard({ friend, lastMessage, lastMessageAt, unreadCount = 0, conversationId, onClick, active = false }) {
+  const dispatch = useDispatch();
   const friendId = friend.userId || friend._id || friend.id;
-  const onlineIds = useSelector(s => s.presence?.onlineIds || []);
-  const typingMap = useSelector(s => s.presence?.typing || {});
-  const lastSeenMap = useSelector(s => s.presence?.lastSeen || {});
-  const storedConversation = useSelector((state) => conversationId ? state.chat?.conversations?.[conversationId] : null);
+  const userStatuses = useSelector((s) => s.presence?.userStatuses || {});
+  const onlineIds = useSelector((s) => s.presence?.onlineIds || []);
+  const typingMap = useSelector((s) => s.presence?.typing || {});
+  const lastSeenMap = useSelector((s) => s.presence?.lastSeen || {});
+  const storedConversation = useSelector((state) => conversationId ? state.chat?.conversations?.[String(conversationId)] : null);
   const { t } = useLanguage();
 
-  const isOnline = onlineIds.includes(friendId);
+  const explicitStatus = userStatuses[String(friendId)] || userStatuses[Number(friendId)];
+  const isPresent = onlineIds.some((i) => String(i) === String(friendId));
+  const isBusy = explicitStatus === 'busy';
+  const isOnline = explicitStatus ? explicitStatus === 'online' : isPresent;
+  const isOffline = explicitStatus === 'offline' || (!explicitStatus && !isPresent);
+
+  const statusType = isBusy ? 'busy' : isOnline ? 'online' : 'offline';
+  const statusLabel = isBusy ? t('busy') : isOnline ? t('online') : t('offline');
+
   const isTyping = typingMap[conversationId] === friendId || typingMap[friendId] === friendId;
   const avatarSrc = resolveAvatarUrl(friend.avatarUrl || friend.avatar, friend.username);
-  const visibleUnreadCount = storedConversation?.unread ?? unreadCount;
+  const rawUnread = storedConversation?.unread ?? unreadCount;
+  const effectiveUnread = active ? 0 : rawUnread;
   const visibleLastMessage = storedConversation?.lastMessage ?? lastMessage;
   const visibleLastMessageAt = storedConversation?.lastMessageAt ?? lastMessageAt;
 
-  const time = visibleLastMessageAt? new Date(visibleLastMessageAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
+  const time = visibleLastMessageAt ? new Date(visibleLastMessageAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
+
+  const handleClick = (e) => {
+    if (conversationId) {
+      dispatch(markAsRead(conversationId));
+    }
+    onClick?.(e);
+  };
 
   return (
-    <div className={`friend-card ${active? 'active' : ''}`} onClick={onClick}>
+    <div className={`friend-card ${active ? 'active' : ''}`} onClick={handleClick}>
       <div className="friend-avatar-wrap">
         <img className="friend-avatar" src={avatarSrc} alt={friend.username} />
-        {isOnline && <span className="online-dot online" aria-label="Online"></span>}
+        <span
+          className={`online-dot ${statusType}`}
+          aria-label={statusLabel}
+          title={statusLabel}
+        ></span>
       </div>
 
       <div className="friend-info">
@@ -51,13 +74,21 @@ export default function FriendCard({ friend, lastMessage, lastMessageAt, unreadC
         </div>
 
         <div className="friend-bottom">
-          <div className={`friend-preview ${isTyping? 'typing' : ''}`}>
-            {isTyping? <span className="typing-text">{t('typing')}</span> : formatPreview(visibleLastMessage, t)}
+          <div className={`friend-preview ${isTyping ? 'typing' : ''}`}>
+            {isTyping ? (
+              <span className="typing-text">{t('typing')}</span>
+            ) : visibleLastMessage ? (
+              formatPreview(visibleLastMessage, t)
+            ) : (
+              <span className={`friend-status-pill ${statusType}`}>
+                {statusLabel}
+              </span>
+            )}
           </div>
-          {visibleUnreadCount > 0 && <div className="unread-badge">{visibleUnreadCount > 99 ? '99+' : visibleUnreadCount}</div>}
+          {effectiveUnread > 0 && <div className="unread-badge">{effectiveUnread > 99 ? '99+' : effectiveUnread}</div>}
         </div>
 
-        {!isOnline &&!isTyping && lastSeenMap[friendId] && (
+        {isOffline && !isTyping && lastSeenMap[friendId] && (
           <div className="last-seen">{t('lastSeen')} {new Date(lastSeenMap[friendId]).toLocaleTimeString()}</div>
         )}
       </div>

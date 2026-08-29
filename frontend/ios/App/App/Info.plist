@@ -66,5 +66,9 @@
 	</array>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<true/>
+	<key>NSCameraUsageDescription</key>
+	<string>GioChat requires camera access for video calling.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>GioChat requires microphone access for voice and video calling.</string>
 </dict>
 </plist>

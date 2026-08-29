@@ -5,6 +5,9 @@ export default defineConfig({
   define: {
     global: "globalThis",
   },
+  css: {
+    postcss: {},
+  },
   plugins: [react()],
   server: {
     port: 5173,

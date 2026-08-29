@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { parseMessageContent } from '../utils/messageContent';
 import { resolveBackendUrl } from '../utils/apiBaseUrl';
 import VoiceMessage from './VoiceMessage';
@@ -27,6 +28,7 @@ function resolveMediaUrl(parsed) {
 
 export default function MessageBubble({ message, isMine }) {
   const { t } = useLanguage();
+  const [showFullImage, setShowFullImage] = useState(false);
   const time = formatMessageTime(message.timestamp);
   const isSeen = Boolean(message.seen || message.read || message.seenAt || message.readAt);
   const parsed = parseMessageContent(message.content);
@@ -38,7 +40,40 @@ export default function MessageBubble({ message, isMine }) {
         {parsed.type === 'text' && <div className="message-content">{parsed.text}</div>}
 
         {parsed.type === 'image' && (
-          <img className="message-image" src={mediaSrc} alt={parsed.fileName || t('sharedPhoto')} />
+          <>
+            <img
+              className="message-image clickable-image"
+              src={mediaSrc}
+              alt={parsed.fileName || t('sharedPhoto')}
+              onClick={() => setShowFullImage(true)}
+              loading="lazy"
+            />
+            {showFullImage && (
+              <div className="image-lightbox-overlay" onClick={() => setShowFullImage(false)}>
+                <div className="image-lightbox-content" onClick={(e) => e.stopPropagation()}>
+                  <img src={mediaSrc} alt={parsed.fileName || t('sharedPhoto')} className="image-lightbox-img" />
+                  <button
+                    type="button"
+                    className="image-lightbox-close"
+                    onClick={() => setShowFullImage(false)}
+                    aria-label="Close"
+                  >
+                    <i className="fa-solid fa-xmark"></i>
+                  </button>
+                  <a
+                    href={mediaSrc}
+                    target="_blank"
+                    rel="noreferrer"
+                    download={parsed.fileName || 'photo'}
+                    className="image-lightbox-download"
+                    title="Download"
+                  >
+                    <i className="fa-solid fa-download"></i>
+                  </a>
+                </div>
+              </div>
+            )}
+          </>
         )}
 
         {parsed.type === 'audio' && (

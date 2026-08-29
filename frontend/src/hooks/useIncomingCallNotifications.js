@@ -1,10 +1,14 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
 import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
 import { getMyConversations } from '../api/conversationApi';
 import { getWsUrl } from '../utils/apiBaseUrl';
+import { setUserStatus, setUserStatuses } from '../store/slices/presenceSlice';
 
 export function useIncomingCallNotifications(userId, onMessage) {
+  const dispatch = useDispatch();
+  const myStatus = useSelector((state) => state.presence?.myStatus || 'online');
   const clientRef = useRef(null);
   const onMessageRef = useRef(onMessage);
   const [incomingCall, setIncomingCall] = useState(null);
@@ -32,13 +36,47 @@ export function useIncomingCallNotifications(userId, onMessage) {
   }, [userId]);
 
   useEffect(() => {
-    if (!userId || conversations.length === 0) return undefined;
+    if (!userId) return undefined;
     const token = localStorage.getItem('token');
     const client = new Client({
       webSocketFactory: () => new SockJS(getWsUrl()),
       connectHeaders: { Authorization: `Bearer ${token}` },
       reconnectDelay: 3000,
       onConnect: () => {
+        // Subscribe to global presence updates
+        client.subscribe('/topic/presence', (frame) => {
+          try {
+            const body = JSON.parse(frame.body);
+            if (body.userId) {
+              dispatch(setUserStatus(body));
+            }
+          } catch (e) {
+            console.warn('Presence parse error', e);
+          }
+        });
+
+        // Subscribe to full presence list
+        client.subscribe('/topic/presence.list', (frame) => {
+          try {
+            const body = JSON.parse(frame.body);
+            dispatch(setUserStatuses(body));
+          } catch (e) {
+            console.warn('Presence list parse error', e);
+          }
+        });
+
+        // Publish my current presence status
+        const currentSavedStatus = localStorage.getItem('gio_user_status') || 'online';
+        client.publish({
+          destination: '/app/presence.status',
+          body: JSON.stringify({ status: currentSavedStatus }),
+        });
+        client.publish({
+          destination: '/app/presence.get',
+          body: '{}',
+        });
+
+        // Subscribe to each conversation topic
         conversations.forEach((conversation) => {
           client.subscribe(`/topic/conversation.${conversation.conversationId}`, (frame) => {
             const signal = JSON.parse(frame.body);
@@ -60,10 +98,13 @@ export function useIncomingCallNotifications(userId, onMessage) {
               return;
             }
 
-            if (signal.callType === 'call-end' && String(signal.senderId) !== String(userId)) {
-              setIncomingCall((currentCall) => (
-                currentCall?.callId === signal.callId ? null : currentCall
-              ));
+            if (signal.callType === 'call-answer') {
+              setIncomingCall(null);
+              return;
+            }
+
+            if (signal.callType === 'call-end') {
+              setIncomingCall(null);
               return;
             }
 
@@ -94,7 +135,17 @@ export function useIncomingCallNotifications(userId, onMessage) {
       client.deactivate();
       clientRef.current = null;
     };
-  }, [conversations, userId]);
+  }, [conversations, userId, dispatch]);
+
+  // Broadcast when myStatus changes
+  useEffect(() => {
+    if (clientRef.current?.connected) {
+      clientRef.current.publish({
+        destination: '/app/presence.status',
+        body: JSON.stringify({ status: myStatus }),
+      });
+    }
+  }, [myStatus]);
 
   const dismissCall = useCallback(() => setIncomingCall(null), []);
 
