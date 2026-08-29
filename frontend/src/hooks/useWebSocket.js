@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
-import { getWsUrl } from '../utils/apiBaseUrl';
+import { getWsUrl, getNativeWsUrl } from '../utils/apiBaseUrl';
 import { sendMessageRest } from '../api/conversationApi';
 import { setUserStatus, setUserStatuses } from '../store/slices/presenceSlice';
 
@@ -95,7 +95,9 @@ export function useWebSocket(conversationId, onMessage, onCallSignal) {
     clientRef.current = client;
 
     return () => {
-      client.deactivate();
+      if (client.active) {
+        client.deactivate();
+      }
       clientRef.current = null;
       pendingCallSignalsRef.current = [];
       setConnected(false);

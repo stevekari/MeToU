@@ -3,7 +3,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
 import { getMyConversations } from '../api/conversationApi';
-import { getWsUrl } from '../utils/apiBaseUrl';
+import { getWsUrl, getNativeWsUrl } from '../utils/apiBaseUrl';
 import { setUserStatus, setUserStatuses } from '../store/slices/presenceSlice';
 
 export function useIncomingCallNotifications(userId, onMessage) {
@@ -11,6 +11,7 @@ export function useIncomingCallNotifications(userId, onMessage) {
   const myStatus = useSelector((state) => state.presence?.myStatus || 'online');
   const clientRef = useRef(null);
   const onMessageRef = useRef(onMessage);
+  const subscriptionsRef = useRef(new Map());
   const [incomingCall, setIncomingCall] = useState(null);
   const [conversations, setConversations] = useState([]);
 
@@ -35,50 +36,16 @@ export function useIncomingCallNotifications(userId, onMessage) {
     };
   }, [userId]);
 
-  useEffect(() => {
-    if (!userId) return undefined;
-    const token = localStorage.getItem('token');
-    const client = new Client({
-      webSocketFactory: () => new SockJS(getWsUrl()),
-      connectHeaders: { Authorization: `Bearer ${token}` },
-      reconnectDelay: 3000,
-      onConnect: () => {
-        // Subscribe to global presence updates
-        client.subscribe('/topic/presence', (frame) => {
+  const syncSubscriptions = useCallback(
+    (client) => {
+      if (!client?.connected || !userId) return;
+
+      conversations.forEach((conversation) => {
+        const convId = String(conversation.conversationId);
+        if (subscriptionsRef.current.has(convId)) return;
+
+        const sub = client.subscribe(`/topic/conversation.${convId}`, (frame) => {
           try {
-            const body = JSON.parse(frame.body);
-            if (body.userId) {
-              dispatch(setUserStatus(body));
-            }
-          } catch (e) {
-            console.warn('Presence parse error', e);
-          }
-        });
-
-        // Subscribe to full presence list
-        client.subscribe('/topic/presence.list', (frame) => {
-          try {
-            const body = JSON.parse(frame.body);
-            dispatch(setUserStatuses(body));
-          } catch (e) {
-            console.warn('Presence list parse error', e);
-          }
-        });
-
-        // Publish my current presence status
-        const currentSavedStatus = localStorage.getItem('gio_user_status') || 'online';
-        client.publish({
-          destination: '/app/presence.status',
-          body: JSON.stringify({ status: currentSavedStatus }),
-        });
-        client.publish({
-          destination: '/app/presence.get',
-          body: '{}',
-        });
-
-        // Subscribe to each conversation topic
-        conversations.forEach((conversation) => {
-          client.subscribe(`/topic/conversation.${conversation.conversationId}`, (frame) => {
             const signal = JSON.parse(frame.body);
             if (!signal.callType) {
               onMessageRef.current?.(signal);
@@ -98,12 +65,7 @@ export function useIncomingCallNotifications(userId, onMessage) {
               return;
             }
 
-            if (signal.callType === 'call-answer') {
-              setIncomingCall(null);
-              return;
-            }
-
-            if (signal.callType === 'call-end') {
+            if (signal.callType === 'call-answer' || signal.callType === 'call-end') {
               setIncomingCall(null);
               return;
             }
@@ -122,20 +84,96 @@ export function useIncomingCallNotifications(userId, onMessage) {
               }
               setIncomingCall({ ...signal, conversationId: conversation.conversationId, friend: conversation.otherUser });
             }
-          });
+          } catch (err) {
+            console.warn('Signal parsing error', err);
+          }
         });
+
+        subscriptionsRef.current.set(convId, sub);
+      });
+    },
+    [conversations, userId]
+  );
+
+  // Stable single-connection lifecycle
+  useEffect(() => {
+    if (!userId) return undefined;
+    const token = localStorage.getItem('token');
+    if (!token) return undefined;
+
+    let isSubscribed = true;
+
+    const client = new Client({
+      webSocketFactory: () => new SockJS(getWsUrl()),
+      connectHeaders: { Authorization: `Bearer ${token}` },
+      reconnectDelay: 5000,
+      heartbeatIncoming: 10000,
+      heartbeatOutgoing: 10000,
+      onConnect: () => {
+        if (!isSubscribed) return;
+
+        // Global presence updates
+        client.subscribe('/topic/presence', (frame) => {
+          try {
+            const body = JSON.parse(frame.body);
+            if (body.userId) {
+              dispatch(setUserStatus(body));
+            }
+          } catch (e) {
+            console.warn('Presence parse error', e);
+          }
+        });
+
+        // Full presence list
+        client.subscribe('/topic/presence.list', (frame) => {
+          try {
+            const body = JSON.parse(frame.body);
+            dispatch(setUserStatuses(body));
+          } catch (e) {
+            console.warn('Presence list parse error', e);
+          }
+        });
+
+        // Publish my initial presence status
+        const currentSavedStatus = localStorage.getItem('gio_user_status') || 'online';
+        client.publish({
+          destination: '/app/presence.status',
+          body: JSON.stringify({ status: currentSavedStatus }),
+        });
+        client.publish({
+          destination: '/app/presence.get',
+          body: '{}',
+        });
+
+        syncSubscriptions(client);
       },
-      onStompError: (frame) => console.error('Call notification error', frame.headers['message']),
+      onStompError: () => {},
     });
 
     client.activate();
     clientRef.current = client;
 
     return () => {
-      client.deactivate();
+      isSubscribed = false;
+      subscriptionsRef.current.forEach((sub) => {
+        try {
+          sub.unsubscribe();
+        } catch (_) {}
+      });
+      subscriptionsRef.current.clear();
+      if (client.active) {
+        client.deactivate();
+      }
       clientRef.current = null;
     };
-  }, [conversations, userId, dispatch]);
+  }, [userId, dispatch, syncSubscriptions]);
+
+  // Keep conversation topics in sync as new conversations are loaded
+  useEffect(() => {
+    if (clientRef.current?.connected) {
+      syncSubscriptions(clientRef.current);
+    }
+  }, [conversations, syncSubscriptions]);
 
   // Broadcast when myStatus changes
   useEffect(() => {
