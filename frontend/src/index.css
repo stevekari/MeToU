@@ -10,6 +10,7 @@
 @import './styles/voiceMessage.css';
 @import './styles/themecontext.css';
 @import './styles/footer.css';
+@import './styles/mobileNav.css';
 
 /* LIGHT THEME - default */
 :root {

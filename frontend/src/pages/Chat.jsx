@@ -6,8 +6,10 @@ import { useWebSocket } from '../hooks/useWebSocket';
 import MessageBubble from '../components/MessageBubble';
 import ChatInput from '../components/ChatInput';
 import FriendCard from '../components/FriendCard';
+import UserProfileModal from '../components/UserProfileModal';
 import { getMessagePreview } from '../utils/messageContent';
 import { resolveAvatarUrl } from '../utils/avatarUrl';
+import { formatTimeAgo } from '../utils/timeAgo';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useWebRTCCall } from '../hooks/useWebRTCCall';
 import CallPanel from '../components/CallPanel';
@@ -38,20 +40,29 @@ export default function Chat({ currentUserId }) {
   const [loading, setLoading] = useState(true);
   const [sidebarLoading, setSidebarLoading] = useState(true);
   const [callSignal, setCallSignal] = useState(location.state?.incomingCall ?? null);
+  const [replyingTo, setReplyingTo] = useState(null);
+  const [editingMessage, setEditingMessage] = useState(null);
+  const [selectedProfileUser, setSelectedProfileUser] = useState(null);
+
   const messagesEndRef = useRef(null);
 
   const scrollToBottom = useCallback((behavior = 'smooth') => {
     messagesEndRef.current?.scrollIntoView({ behavior });
   }, []);
 
+  const safeMessages = Array.isArray(messages) ? messages : [];
+  const safeConversations = Array.isArray(conversations) ? conversations : [];
+
   useEffect(() => {
-    scrollToBottom(messages.length <= 1 ? 'auto' : 'smooth');
-  }, [messages, scrollToBottom]);
+    scrollToBottom(safeMessages.length <= 1 ? 'auto' : 'smooth');
+  }, [safeMessages.length, scrollToBottom]);
 
   const userStatuses = useSelector((s) => s.presence?.userStatuses || {});
   const onlineIds = useSelector((s) => s.presence?.onlineIds || []);
+  const typingMap = useSelector((s) => s.presence?.typing || {});
 
   const sortConversations = (items) => {
+    if (!Array.isArray(items)) return [];
     return [...items].sort((a, b) => {
       const timeA = new Date(a.lastMessageAt || a.lastMessageTime || a.createdAt || 0).getTime();
       const timeB = new Date(b.lastMessageAt || b.lastMessageTime || b.createdAt || 0).getTime();
@@ -60,19 +71,23 @@ export default function Chat({ currentUserId }) {
   };
 
   const handleIncoming = useCallback((message) => {
+    if (!message) return;
+
     setMessages((prev) => {
-      if (message.id && prev.some((m) => m.id === message.id)) {
-        return prev;
+      const list = Array.isArray(prev) ? prev : [];
+      if (message.id && list.some((m) => m.id === message.id)) {
+        return list.map((m) => (m.id === message.id ? { ...m, ...message } : m));
       }
-      return [...prev, message];
+      return [...list, message];
     });
 
     setConversations((prev) => {
-      const updated = prev.map((c) =>
+      const list = Array.isArray(prev) ? prev : [];
+      const updated = list.map((c) =>
         String(c.conversationId) === String(message.conversationId)
           ? {
               ...c,
-              lastMessage: message.content,
+              lastMessage: message.isDeleted ? 'This message was deleted' : message.content,
               lastMessageTime: message.timestamp || new Date().toISOString(),
               lastMessageAt: message.timestamp || new Date().toISOString(),
             }
@@ -82,24 +97,106 @@ export default function Chat({ currentUserId }) {
     });
   }, []);
 
-  const { sendMessage, sendCallSignal } = useWebSocket(conversationId, handleIncoming, setCallSignal);
-
-  const handleSend = useCallback((content) => {
-    sendMessage(content);
-    setConversations((prev) => {
-      const updated = prev.map((c) =>
-        String(c.conversationId) === String(conversationId)
-          ? {
-              ...c,
-              lastMessage: content,
-              lastMessageTime: new Date().toISOString(),
-              lastMessageAt: new Date().toISOString(),
-            }
-          : c
-      );
-      return sortConversations(updated);
+  const handleReceipt = useCallback((receipt) => {
+    if (!receipt) return;
+    setMessages((prev) => {
+      const list = Array.isArray(prev) ? prev : [];
+      return list.map((msg) => {
+        if (String(msg.senderId) === String(currentUserId)) {
+          return { ...msg, status: 'READ', readAt: receipt.readAt };
+        }
+        return msg;
+      });
     });
-  }, [conversationId, sendMessage]);
+  }, [currentUserId]);
+
+  const {
+    sendMessage,
+    sendTyping,
+    sendReadReceipt,
+    sendEdit,
+    sendDelete,
+    sendCallSignal,
+  } = useWebSocket(conversationId, handleIncoming, setCallSignal, handleReceipt);
+
+  const handleSend = useCallback(
+    (content, replyToId, replyToSenderName, replyToContent) => {
+      sendMessage(content, replyToId, replyToSenderName, replyToContent);
+      setConversations((prev) => {
+        const list = Array.isArray(prev) ? prev : [];
+        const updated = list.map((c) =>
+          String(c.conversationId) === String(conversationId)
+            ? {
+                ...c,
+                lastMessage: content,
+                lastMessageTime: new Date().toISOString(),
+                lastMessageAt: new Date().toISOString(),
+              }
+            : c
+        );
+        return sortConversations(updated);
+      });
+    },
+    [conversationId, sendMessage]
+  );
+
+  const handleSaveEdit = useCallback(
+    (messageId, newContent) => {
+      sendEdit(messageId, newContent);
+      setEditingMessage(null);
+      setMessages((prev) => {
+        const list = Array.isArray(prev) ? prev : [];
+        return list.map((m) =>
+          m.id === messageId
+            ? { ...m, content: newContent, isEdited: true, editedAt: new Date().toISOString() }
+            : m
+        );
+      });
+    },
+    [sendEdit]
+  );
+
+  const handleDelete = useCallback(
+    (messageId) => {
+      sendDelete(messageId);
+      setMessages((prev) => {
+        const list = Array.isArray(prev) ? prev : [];
+        return list.map((m) =>
+          m.id === messageId
+            ? { ...m, isDeleted: true, content: 'This message was deleted' }
+            : m
+        );
+      });
+    },
+    [sendDelete]
+  );
+
+  const handleReply = useCallback((message) => {
+    const isMine = message.senderId === currentUserId;
+    const senderName = isMine ? 'You' : (friend?.displayName || friend?.username || 'Friend');
+    let snippet = message.content;
+    try {
+      const parsed = JSON.parse(message.content);
+      snippet = parsed.text || (parsed.type ? `[${parsed.type}]` : message.content);
+    } catch (_) {}
+
+    setReplyingTo({
+      id: message.id,
+      senderName,
+      isMine,
+      content: snippet,
+      contentSnippet: snippet.length > 60 ? snippet.slice(0, 60) + '...' : snippet,
+    });
+  }, [currentUserId, friend]);
+
+  const handleScrollToMessage = useCallback((targetMsgId) => {
+    const el = document.getElementById(`msg-${targetMsgId}`);
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      el.classList.add('message-highlight');
+      setTimeout(() => el.classList.remove('message-highlight'), 1800);
+    }
+  }, []);
 
   const call = useWebRTCCall({
     conversationId,
@@ -108,20 +205,44 @@ export default function Chat({ currentUserId }) {
     onSignal: callSignal,
     autoAccept: Boolean(location.state?.autoAccept),
   });
-  const friendId = friend?.userId || friend?._id || friend?.id;
 
-  const friendExplicitStatus = friendId ? (userStatuses[String(friendId)] || userStatuses[Number(friendId)]) : null;
+  const friendId = friend?.userId || friend?._id || friend?.id;
+  const friendPresence = friendId ? userStatuses[String(friendId)] : null;
   const isFriendPresent = friendId ? onlineIds.some((i) => String(i) === String(friendId)) : false;
-  const isFriendBusy = friendExplicitStatus === 'busy';
-  const isFriendOnline = friendExplicitStatus ? friendExplicitStatus === 'online' : isFriendPresent;
+  const isFriendOnline = friendPresence?.online ?? isFriendPresent;
+  const friendCustomStatus = friendPresence?.status || (isFriendOnline ? 'online' : 'offline');
+  const isFriendBusy = friendCustomStatus === 'busy';
+
   const friendStatusType = isFriendBusy ? 'busy' : isFriendOnline ? 'online' : 'offline';
-  const friendStatusLabel = isFriendBusy ? t('busy') : isFriendOnline ? t('online') : t('offline');
+  const friendLastSeenTime = friendPresence?.lastSeen || friend?.lastSeen;
+  const friendLastSeenText = !isFriendOnline && friendLastSeenTime ? `Last seen ${formatTimeAgo(friendLastSeenTime)}` : null;
+  const friendStatusLabel = isFriendBusy
+    ? t('busy')
+    : isFriendOnline
+      ? t('online')
+      : (friendLastSeenText || t('offline'));
+
+  const typingState = typingMap[String(conversationId)];
+  const isOtherTyping = Boolean(typingState?.isTyping && String(typingState.userId) !== String(currentUserId));
 
   useEffect(() => {
     if (selectedFriend) {
       setFriend(selectedFriend);
     }
   }, [selectedFriend]);
+
+  const autoStartCallType = location.state?.startCallType;
+  const hasAutoStartedRef = useRef(false);
+
+  useEffect(() => {
+    if (autoStartCallType && call.callState === 'idle' && !hasAutoStartedRef.current) {
+      hasAutoStartedRef.current = true;
+      const timer = setTimeout(() => {
+        call.startCall(autoStartCallType);
+      }, 400);
+      return () => clearTimeout(timer);
+    }
+  }, [autoStartCallType, call]);
 
   useEffect(() => {
     setSidebarLoading(true);
@@ -143,9 +264,15 @@ export default function Chat({ currentUserId }) {
   useEffect(() => {
     setLoading(true);
     getMessages(conversationId)
-      .then(setMessages)
+      .then((msgs) => {
+        setMessages(Array.isArray(msgs) ? msgs : []);
+        sendReadReceipt();
+      })
+      .catch(() => {
+        setMessages([]);
+      })
       .finally(() => setLoading(false));
-  }, [conversationId]);
+  }, [conversationId, sendReadReceipt]);
 
   const trimmedSearch = search.trim();
   const showSearchPopup = searchFocused && trimmedSearch.length >= 3;
@@ -192,10 +319,12 @@ export default function Chat({ currentUserId }) {
     openChat(nextFriend);
   };
 
+  const friendDisplayName = friend?.displayName || friend?.username || 'User';
+
   return (
     <div className="chat-layout-page">
       <aside className="chat-sidebar">
-        <h2>{t('friends')} <span className="friends-count">({t('friendsCount', { count: conversations.length })})</span></h2>
+        <h2>{t('friends')} <span className="friends-count">({t('friendsCount', { count: safeConversations.length })})</span></h2>
 
         <div className="friends-search">
           <div className="search-bar">
@@ -233,7 +362,11 @@ export default function Chat({ currentUserId }) {
                     style={{ animationDelay: `${index * 30}ms` }}
                     onMouseDown={(e) => e.preventDefault()}
                   >
-                    <FriendCard friend={nextFriend} onClick={() => selectFromSearch(nextFriend)} />
+                    <FriendCard
+                      friend={nextFriend}
+                      onAvatarClick={(f) => setSelectedProfileUser(f)}
+                      onClick={() => selectFromSearch(nextFriend)}
+                    />
                   </div>
                 ))}
             </div>
@@ -242,17 +375,22 @@ export default function Chat({ currentUserId }) {
 
         <div className="friends-list">
           {sidebarLoading && <div className="empty-state">{t('loadingFriends')}</div>}
-          {!sidebarLoading && conversations.length === 0 && (
-            <div className="empty-state">{t('noConversations')}</div>
+          {!sidebarLoading && safeConversations.length === 0 && (
+            <div className="no-chats-box">
+              <i className="fa-solid fa-comments no-chats-icon" />
+              <h3 className="no-chats-title">{t('noChats')}</h3>
+              <p className="no-chats-desc">{t('noChatsDesc')}</p>
+            </div>
           )}
           {!sidebarLoading &&
-            conversations.map((conv) => (
+            safeConversations.map((conv) => (
               <FriendCard
                 key={conv.conversationId}
                 friend={conv.otherUser}
                 conversationId={conv.conversationId}
                 lastMessage={getMessagePreview(conv.lastMessage)}
                 lastMessageAt={conv.lastMessageAt ?? conv.lastMessageTime}
+                onAvatarClick={(f) => setSelectedProfileUser(f)}
                 onClick={() => navigate(`/chat/${conv.conversationId}`, { state: { friend: conv.otherUser } })}
                 active={friend?.id === conv.otherUser?.id}
               />
@@ -265,23 +403,64 @@ export default function Chat({ currentUserId }) {
           {friend && (
             <>
               <div className="chat-header-user">
-                <div className="friend-avatar-wrap">
+                <button
+                  type="button"
+                  className="chat-back-btn"
+                  onClick={() => navigate('/friends')}
+                  title={t('friends') || 'Back'}
+                  aria-label="Back to friends"
+                >
+                  <i className="fa-solid fa-chevron-left" />
+                </button>
+                <div
+                  className="friend-avatar-wrap clickable"
+                  onClick={() => setSelectedProfileUser(friend)}
+                  title="View profile"
+                >
                   <img
-                    src={resolveAvatarUrl(friend.avatarUrl, friend.username)}
-                    alt={friend.username}
+                    src={resolveAvatarUrl(friend.avatarUrl, friendDisplayName)}
+                    alt={friendDisplayName}
                   />
                   <span className={`online-dot ${friendStatusType}`} title={friendStatusLabel}></span>
                 </div>
-                <div className="chat-header-details">
-                  <h2>{friend.username}</h2>
-                  <span className={`chat-header-status ${friendStatusType}`}>{friendStatusLabel}</span>
+                <div
+                  className="chat-header-details clickable"
+                  onClick={() => setSelectedProfileUser(friend)}
+                >
+                  <div className="chat-header-name-row">
+                    <h2>{friendDisplayName}</h2>
+                    {friend.username && friend.username !== friendDisplayName && (
+                      <span className="chat-header-handle">@{friend.username}</span>
+                    )}
+                  </div>
+                  <span className={`chat-header-status ${friendStatusType}`}>
+                    {isOtherTyping ? (
+                      <span className="typing-header-text">
+                        <span className="typing-dots"><span>.</span><span>.</span><span>.</span></span> typing...
+                      </span>
+                    ) : (
+                      friendStatusLabel
+                    )}
+                  </span>
                 </div>
               </div>
               <div className="call-buttons">
-                <button type="button" onClick={() => call.startCall('voice')} disabled={call.callState !== 'idle'} aria-label="Start voice call" title="Start voice call">
+                <button
+                  type="button"
+                  onClick={() => call.startCall('voice')}
+                  disabled={call.callState !== 'idle'}
+                  aria-label="Start voice call"
+                  title="Start voice call"
+                >
                   <i className="fa-solid fa-phone"></i>
                 </button>
-                <button type="button" onClick={() => call.startCall('video')} disabled={call.callState !== 'idle'} aria-label="Start video call" title="Start video call">
+                <button
+                  type="button"
+                  onClick={() => call.startCall('video')}
+                  disabled={call.callState !== 'idle'}
+                  aria-label="Start video call"
+                  title="Start video call"
+                >
                   <i className="fa-solid fa-video"></i>
                 </button>
               </div>
@@ -299,12 +478,36 @@ export default function Chat({ currentUserId }) {
 
         <div className="chat-messages">
           {loading && <div className="page-loading">{t('loadingConversation')}</div>}
-          {!loading && messages.length === 0 && friend && (
-            <div className="empty-state">{t('sayHi', { username: friend.username })}</div>
+          {!loading && safeMessages.length === 0 && friend && (
+            <div className="empty-state">{t('sayHi', { username: friendDisplayName })}</div>
           )}
-          {messages.map((m) => (
-            <MessageBubble key={m.id ?? `${m.senderId}-${m.timestamp}`} message={m} isMine={m.senderId === currentUserId} />
+          {safeMessages.map((m) => (
+            <MessageBubble
+              key={m.id ?? `${m.senderId}-${m.timestamp}`}
+              message={m}
+              isMine={m.senderId === currentUserId}
+              onReply={handleReply}
+              onEdit={(msg) => {
+                setEditingMessage(msg);
+                setReplyingTo(null);
+              }}
+              onDelete={handleDelete}
+              onScrollToMessage={handleScrollToMessage}
+            />
           ))}
+
+          {/* Typing bubble inside chat area */}
+          {isOtherTyping && (
+            <div className="message-row theirs typing-row">
+              <div className="message-bubble theirs typing-bubble">
+                <span className="typing-bubble-text">{friendDisplayName} is typing</span>
+                <span className="typing-dots-anim">
+                  <span></span><span></span><span></span>
+                </span>
+              </div>
+            </div>
+          )}
+
           <div ref={messagesEndRef} />
         </div>
 
@@ -325,8 +528,28 @@ export default function Chat({ currentUserId }) {
           onEnd={call.callState === 'incoming' ? call.rejectCall : call.endCall}
         />
 
-        <ChatInput onSend={handleSend} />
+        <ChatInput
+          onSend={handleSend}
+          onTyping={sendTyping}
+          replyingTo={replyingTo}
+          onCancelReply={() => setReplyingTo(null)}
+          editingMessage={editingMessage}
+          onSaveEdit={handleSaveEdit}
+          onCancelEdit={() => setEditingMessage(null)}
+        />
       </section>
+
+      {selectedProfileUser && (
+        <UserProfileModal
+          user={selectedProfileUser}
+          userId={selectedProfileUser.id || selectedProfileUser.userId}
+          onClose={() => setSelectedProfileUser(null)}
+          onStartCall={(f, type) => {
+            setSelectedProfileUser(null);
+            call.startCall(type);
+          }}
+        />
+      )}
     </div>
   );
 }

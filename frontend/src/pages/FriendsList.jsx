@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { searchUsers, getPresenceMap } from "../api/userApi";
 import { getMyConversations, startConversation } from "../api/conversationApi";
 import FriendCard from "../components/FriendCard";
+import UserProfileModal from "../components/UserProfileModal";
 import { getMessagePreview } from "../utils/messageContent";
 import { useLanguage } from '../contexts/LanguageContext';
 import { useDispatch, useSelector } from 'react-redux';
@@ -16,6 +17,7 @@ export default function FriendsList() {
   const [searchFocused, setSearchFocused] = useState(false);
   const [searchResults, setSearchResults] = useState([]);
   const [searchLoading, setSearchLoading] = useState(false);
+  const [selectedProfileUser, setSelectedProfileUser] = useState(null);
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const liveConversations = useSelector((state) => state.chat.conversations);
@@ -28,6 +30,14 @@ export default function FriendsList() {
        dispatch(setConversationState(items));
      })
      .finally(() => setLoading(false));
+
+    getPresenceMap()
+      .then((presence) => {
+        if (presence && typeof presence === 'object') {
+          dispatch(setUserStatuses(presence));
+        }
+      })
+      .catch(() => {});
   }, [dispatch]);
 
   const sortedConversations = useMemo(() => {
@@ -88,6 +98,17 @@ export default function FriendsList() {
     openChat(friend);
   };
 
+  const handleStartCall = async (friend, type) => {
+    try {
+      const { conversationId } = await startConversation(friend.id);
+      navigate(`/chat/${conversationId}`, {
+        state: { friend, startCallOnMount: type }
+      });
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
   if (loading) return <div className="page-loading">{t('loadingFriends')}</div>;
 
   return (
@@ -134,7 +155,10 @@ export default function FriendsList() {
                     onMouseDown={(e) => e.preventDefault()}
                     onClick={() => selectFromSearch(friend)}
                   >
-                    <FriendCard friend={friend} />
+                    <FriendCard
+                      friend={friend}
+                      onAvatarClick={(f) => setSelectedProfileUser(f)}
+                    />
                   </div>
                 ))}
             </div>
@@ -142,9 +166,11 @@ export default function FriendsList() {
         </div>
 
         {conversations.length === 0 && (
-          <p className="empty-state">
-            {t('noConversations')}
-          </p>
+          <div className="no-chats-box">
+            <i className="fa-solid fa-comments no-chats-icon" />
+            <h3 className="no-chats-title">{t('noChats')}</h3>
+            <p className="no-chats-desc">{t('noChatsDesc')}</p>
+          </div>
         )}
 
         <div className="friends-list">
@@ -155,6 +181,7 @@ export default function FriendsList() {
               conversationId={conv.conversationId}
               lastMessage={getMessagePreview(liveConversations[conv.conversationId]?.lastMessage ?? conv.lastMessage)}
               lastMessageAt={liveConversations[conv.conversationId]?.lastMessageAt ?? conv.lastMessageTime}
+              onAvatarClick={(friend) => setSelectedProfileUser(friend)}
               onClick={() =>
                 navigate(`/chat/${conv.conversationId}`, {
                   state: { friend: conv.otherUser },
@@ -170,6 +197,15 @@ export default function FriendsList() {
           {t('selectFriend')}
         </div>
       </section>
+
+      {selectedProfileUser && (
+        <UserProfileModal
+          user={selectedProfileUser}
+          userId={selectedProfileUser.id || selectedProfileUser.userId}
+          onClose={() => setSelectedProfileUser(null)}
+          onStartCall={(friend, type) => handleStartCall(friend, type)}
+        />
+      )}
     </div>
   );
 }

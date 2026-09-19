@@ -11,35 +11,30 @@ export function parseMessageContent(rawContent) {
         return { type: 'text', text: parsed.text ?? '' };
       }
 
-      if (parsed.type === 'image' && typeof parsed.dataUrl === 'string') {
+      if (parsed.type === 'image') {
         return {
           type: 'image',
-          dataUrl: parsed.dataUrl,
+          mediaUrl: parsed.mediaUrl || parsed.dataUrl || parsed.url,
           fileName: parsed.fileName ?? 'photo',
+          fileSize: parsed.fileSize,
         };
       }
 
-      if (parsed.type === 'image' && typeof parsed.mediaUrl === 'string') {
-        return {
-          type: 'image',
-          mediaUrl: parsed.mediaUrl,
-          fileName: parsed.fileName ?? 'photo',
-        };
-      }
-
-      if (parsed.type === 'audio' && typeof parsed.dataUrl === 'string') {
+      if (parsed.type === 'audio') {
         return {
           type: 'audio',
-          dataUrl: parsed.dataUrl,
+          mediaUrl: parsed.mediaUrl || parsed.dataUrl || parsed.url,
           durationSec: parsed.durationSec ?? null,
         };
       }
 
-      if (parsed.type === 'audio' && typeof parsed.mediaUrl === 'string') {
+      if (parsed.type === 'document' || parsed.type === 'file') {
         return {
-          type: 'audio',
-          mediaUrl: parsed.mediaUrl,
-          durationSec: parsed.durationSec ?? null,
+          type: 'file',
+          mediaUrl: parsed.mediaUrl || parsed.dataUrl || parsed.url,
+          fileName: parsed.fileName ?? 'document',
+          fileSize: parsed.fileSize ?? null,
+          contentType: parsed.contentType ?? parsed.mimeType ?? 'application/octet-stream',
         };
       }
 
@@ -63,9 +58,10 @@ export function getMessagePreview(rawContent) {
   if (!rawContent) return null;
 
   const parsed = parseMessageContent(rawContent);
-  if (parsed.type === 'image') return '[Photo]';
-  if (parsed.type === 'audio') return '[Voice message]';
-  if (parsed.type === 'call') return parsed.mediaType === 'video' ? '[Video call]' : '[Voice call]';
+  if (parsed.type === 'image') return '📷 [Photo]';
+  if (parsed.type === 'audio') return '🎙️ [Voice message]';
+  if (parsed.type === 'file') return `📄 ${parsed.fileName || 'Document'}`;
+  if (parsed.type === 'call') return parsed.mediaType === 'video' ? '📹 [Video call]' : '📞 [Voice call]';
 
   const text = parsed.text?.trim() ?? '';
   return text || null;

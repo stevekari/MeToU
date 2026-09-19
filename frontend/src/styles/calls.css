@@ -1,0 +1,288 @@
+/* ---------- Calls Page Styling ---------- */
+
+.calls-page-container {
+    width: min(800px, 100%);
+    margin: 0 auto;
+    padding: 16px 14px;
+    display: flex;
+    flex-direction: column;
+    box-sizing: border-box;
+}
+
+.calls-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    min-height: calc(100vh - 140px);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+}
+
+.calls-header {
+    padding: 16px 18px 12px;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface-hi);
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.calls-header-title-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.calls-title {
+    margin: 0;
+    font-size: 1.35rem;
+    font-weight: 700;
+    font-family: var(--font-display);
+    color: var(--text);
+}
+
+.calls-filter-tabs {
+    display: inline-flex;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 3px;
+    gap: 2px;
+}
+
+.calls-filter-tab {
+    background: transparent;
+    border: none;
+    border-radius: 16px;
+    padding: 4px 14px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: all 0.18s ease;
+}
+
+.calls-filter-tab.active {
+    background: var(--accent);
+    color: #ffffff;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.calls-search-wrap {
+    position: relative;
+    display: flex;
+    align-items: center;
+    width: 100%;
+}
+
+.calls-search-icon {
+    position: absolute;
+    left: 12px;
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    pointer-events: none;
+}
+
+.calls-search-input {
+    width: 100%;
+    padding: 8px 34px 8px 34px;
+    font-size: 0.88rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    color: var(--text);
+    outline: none;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.calls-search-input:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+.calls-search-clear {
+    position: absolute;
+    right: 10px;
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    padding: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Call List Items */
+.calls-list-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 8px 0;
+}
+
+.calls-items-list {
+    display: flex;
+    flex-direction: column;
+}
+
+.call-item-row {
+    display: flex;
+    align-items: center;
+    padding: 12px 16px;
+    gap: 12px;
+    border-bottom: 1px solid var(--border);
+    transition: background 0.15s ease;
+}
+
+.call-item-row:last-child {
+    border-bottom: none;
+}
+
+.call-item-row:hover {
+    background: var(--surface-hi);
+}
+
+.call-item-info {
+    flex: 1;
+    min-width: 0;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+
+.call-item-name {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.call-item-name.missed {
+    color: #ef4444;
+}
+
+.call-item-details {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.8rem;
+    color: var(--text-muted);
+}
+
+/* Call Arrows */
+.call-arrow-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.85rem;
+}
+
+.call-arrow.missed {
+    color: #ef4444;
+    /* Red top arrow for missed call */
+    font-weight: 900;
+}
+
+.call-arrow.outgoing {
+    color: #22c55e;
+    /* Green forward arrow for calling/outgoing */
+    font-weight: 900;
+}
+
+.call-arrow.received {
+    color: #22c55e;
+    /* Green down arrow for received call */
+    font-weight: 900;
+}
+
+.call-status-text {
+    font-size: 0.8rem;
+    font-weight: 500;
+}
+
+.call-time-divider {
+    opacity: 0.5;
+    font-size: 0.75rem;
+}
+
+.call-time-text {
+    font-size: 0.78rem;
+    opacity: 0.85;
+}
+
+/* Action Quick Call Buttons */
+.call-item-actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
+}
+
+.call-quick-btn {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: var(--surface-hi);
+    border: 1px solid var(--border);
+    color: var(--accent);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 0.95rem;
+    transition: all 0.18s ease;
+}
+
+.call-quick-btn:hover {
+    background: var(--accent);
+    color: #ffffff;
+    border-color: var(--accent);
+    transform: scale(1.05);
+}
+
+.call-quick-btn.voice:hover {
+    background: #22c55e;
+    border-color: #22c55e;
+}
+
+.call-quick-btn.video:hover {
+    background: #3b82f6;
+    border-color: #3b82f6;
+}
+
+@media (max-width: 768px) {
+    .calls-page-container {
+        padding: 10px 8px calc(80px + env(safe-area-inset-bottom, 0px));
+        max-width: 100vw;
+        overflow-x: hidden;
+    }
+
+    .calls-card {
+        min-height: auto;
+        border-radius: 12px;
+    }
+
+    .calls-header {
+        padding: 12px 14px 10px;
+    }
+
+    .calls-title {
+        font-size: 1.18rem;
+    }
+
+    .call-item-row {
+        padding: 10px 12px;
+    }
+
+    .call-quick-btn {
+        width: 34px;
+        height: 34px;
+        font-size: 0.9rem;
+    }
+}

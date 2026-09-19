@@ -1,5 +1,5 @@
+import { Link } from 'react-router-dom';
 import { useLanguage } from '../contexts/LanguageContext';
-import chatImg from '../assets/chat.jpeg';
 
 export default function Footer() {
   const year = new Date().getFullYear();
@@ -11,9 +11,6 @@ export default function Footer() {
       
       <div className="footer-content">
         <div className="footer-brand">
-          {/* <div className="footer-logo">
-            <img className="img-round" src={chatImg} alt="GioChat" />
-          </div> */}
           <p className="footer-tagline">
             {t('connectTagline')} <br />{t('friendshipTagline')}
           </p>
@@ -22,9 +19,9 @@ export default function Footer() {
         <div className="footer-links">
           <div className="footer-col">
             <h4>{t('product')}</h4>
-            <a href="/friends">{t('friends')}</a>
-            <a href="/settings">{t('settings')}</a>
-            <a href="#">{t('features')}</a>
+            <Link to="/friends">{t('friends')}</Link>
+            <Link to="/settings">{t('settings')}</Link>
+            <a href="#features">{t('features')}</a>
           </div>
           <div className="footer-col">
             <h4>{t('support')}</h4>

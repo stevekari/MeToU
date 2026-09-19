@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { resolveAvatarUrl } from '../utils/avatarUrl';
 
@@ -18,11 +18,73 @@ export default function CallPanel({
   onAccept,
   onEnd,
 }) {
+  const { t } = useLanguage();
+  const [durationSec, setDurationSec] = useState(0);
+
   const remoteVideoRef = useRef(null);
   const remoteAudioRef = useRef(null);
   const localVideoRef = useRef(null);
-  const { t } = useLanguage();
 
+  const connected = callState === 'connected';
+  const incoming = callState === 'incoming';
+  const calling = callState === 'calling';
+  const videoCall = callType === 'video';
+
+  // Call duration timer
+  useEffect(() => {
+    if (!connected) {
+      setDurationSec(0);
+      return undefined;
+    }
+    const timer = setInterval(() => {
+      setDurationSec((prev) => prev + 1);
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [connected]);
+
+  const formatDuration = (seconds) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  // Attach remote video callback
+  const attachRemoteVideo = useCallback(
+    (node) => {
+      remoteVideoRef.current = node;
+      if (node && remoteStream) {
+        node.srcObject = remoteStream;
+        node.play().catch(() => {});
+      }
+    },
+    [remoteStream]
+  );
+
+  // Attach remote audio callback
+  const attachRemoteAudio = useCallback(
+    (node) => {
+      remoteAudioRef.current = node;
+      if (node && remoteStream) {
+        node.srcObject = remoteStream;
+        node.play().catch(() => {});
+      }
+    },
+    [remoteStream]
+  );
+
+  // Attach local video callback
+  const attachLocalVideo = useCallback(
+    (node) => {
+      localVideoRef.current = node;
+      if (node && localStream) {
+        node.srcObject = localStream;
+        node.play().catch(() => {});
+      }
+    },
+    [localStream]
+  );
+
+  // Sync streams whenever remoteStream or localStream change
   useEffect(() => {
     if (remoteVideoRef.current && remoteStream) {
       remoteVideoRef.current.srcObject = remoteStream;
@@ -32,40 +94,43 @@ export default function CallPanel({
       remoteAudioRef.current.srcObject = remoteStream;
       remoteAudioRef.current.play().catch(() => {});
     }
-  }, [remoteStream, callState, callType]);
+  }, [remoteStream]);
 
   useEffect(() => {
     if (localVideoRef.current && localStream) {
       localVideoRef.current.srcObject = localStream;
       localVideoRef.current.play().catch(() => {});
     }
-  }, [localStream, callState, callType]);
+  }, [localStream]);
 
   if (callState === 'idle') return null;
-
-  const incoming = callState === 'incoming';
-  const calling = callState === 'calling';
-  const connected = callState === 'connected';
-  const videoCall = callType === 'video';
 
   const avatarSrc = resolveAvatarUrl(friend?.avatarUrl, friend?.username);
   const friendName = friend?.username || 'Friend';
 
   return (
     <div className={`call-panel ${videoCall ? 'video-call-active' : 'voice-call-active'} state-${callState}`}>
-      {/* Remote Audio Track for voice calls or background audio */}
-      <audio ref={remoteAudioRef} autoPlay playsInline />
+      {/* Remote Audio Track for voice & video call audio */}
+      <audio
+        ref={attachRemoteAudio}
+        autoPlay
+        playsInline
+        onLoadedMetadata={(e) => e.target.play().catch(() => {})}
+      />
 
       {videoCall && (
         <div className="video-streams-container">
-          {connected && remoteStream ? (
-            <video
-              ref={remoteVideoRef}
-              className="remote-video"
-              autoPlay
-              playsInline
-            />
-          ) : (
+          {/* Remote Video element - always in DOM, displayed when stream active */}
+          <video
+            ref={attachRemoteVideo}
+            className={`remote-video ${connected && remoteStream ? 'video-ready' : 'video-hidden'}`}
+            autoPlay
+            playsInline
+            onLoadedMetadata={(e) => e.target.play().catch(() => {})}
+          />
+
+          {/* Placeholder while connecting or when video is loading */}
+          {(!connected || !remoteStream) && (
             <div className="video-connecting-placeholder">
               <div className="video-avatar-pulse">
                 {friend?.avatarUrl ? (
@@ -83,12 +148,21 @@ export default function CallPanel({
 
           {/* Local Video Picture-in-Picture */}
           <video
-            ref={localVideoRef}
+            ref={attachLocalVideo}
             className={`local-video ${isMutedVideo ? 'camera-off' : ''}`}
             autoPlay
             muted
             playsInline
+            onLoadedMetadata={(e) => e.target.play().catch(() => {})}
           />
+
+          {/* Connected Call Duration Header for Video */}
+          {connected && (
+            <div className="video-call-header-overlay">
+              <span className="video-peer-name">{friendName}</span>
+              <span className="video-call-duration">{formatDuration(durationSec)}</span>
+            </div>
+          )}
         </div>
       )}
 
@@ -105,11 +179,13 @@ export default function CallPanel({
 
           <strong className="voice-caller-name">{friendName}</strong>
           <span className="voice-call-status">
-            {incoming
-              ? t('incomingVoiceCall')
-              : calling
-                ? t(isRinging ? 'ringing' : 'calling')
-                : t('voiceCall')}
+            {connected
+              ? formatDuration(durationSec)
+              : incoming
+                ? t('incomingVoiceCall')
+                : calling
+                  ? t(isRinging ? 'ringing' : 'calling')
+                  : t('voiceCall')}
           </span>
         </div>
       )}
@@ -123,7 +199,7 @@ export default function CallPanel({
             <button
               type="button"
               className="btn-call-action btn-accept"
-              onClick={onAccept}
+              onClick={() => onAccept && onAccept()}
               title={t('accept')}
               aria-label={t('accept')}
             >
@@ -133,7 +209,7 @@ export default function CallPanel({
             <button
               type="button"
               className="btn-call-action btn-hangup"
-              onClick={onEnd}
+              onClick={() => onEnd && onEnd()}
               title={t('decline')}
               aria-label={t('decline')}
             >

@@ -6,7 +6,6 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.StringUtils;
-
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -17,6 +16,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.time.Instant;
+import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
@@ -37,18 +37,21 @@ public class MediaController {
         Files.createDirectories(uploadDir);
     }
 
+    private String formatFileSize(long bytes) {
+        if (bytes < 1024) return bytes + " B";
+        int exp = (int) (Math.log(bytes) / Math.log(1024));
+        String pre = ("KMGTPE").charAt(exp - 1) + "";
+        return String.format(Locale.US, "%.1f %sB", bytes / Math.pow(1024, exp), pre);
+    }
+
     @PostMapping("/upload")
     public ResponseEntity<?> upload(@RequestParam("file") MultipartFile file,
-                                    @RequestParam("kind") String kind) {
+                                    @RequestParam(value = "kind", required = false, defaultValue = "file") String kind) {
         if (file.isEmpty()) {
             return ResponseEntity.badRequest().body(Map.of("error", "File is empty"));
         }
 
-        String normalizedKind = kind == null ? "" : kind.trim().toLowerCase(Locale.ROOT);
-        if (!normalizedKind.equals("image") && !normalizedKind.equals("audio")) {
-            return ResponseEntity.badRequest().body(Map.of("error", "Invalid media kind"));
-        }
-
+        String normalizedKind = kind == null ? "file" : kind.trim().toLowerCase(Locale.ROOT);
         String rawContentType = file.getContentType();
         String contentType = rawContentType != null ? normalizeMimeType(rawContentType) : "";
 
@@ -69,6 +72,13 @@ public class MediaController {
                         case "mp3" -> contentType = "audio/mpeg";
                         case "m4a", "mp4" -> contentType = "audio/mp4";
                         case "wav" -> contentType = "audio/wav";
+                        case "pdf" -> contentType = "application/pdf";
+                        case "doc" -> contentType = "application/msword";
+                        case "docx" -> contentType = "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+                        case "xls" -> contentType = "application/vnd.ms-excel";
+                        case "xlsx" -> contentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+                        case "txt" -> contentType = "text/plain";
+                        case "zip" -> contentType = "application/zip";
                     }
                 }
             }
@@ -79,12 +89,10 @@ public class MediaController {
         }
 
         if (normalizedKind.equals("image") && !contentType.startsWith("image/")) {
-            // Default to image/jpeg if uploaded under kind=image
             contentType = "image/jpeg";
         }
 
         if (normalizedKind.equals("audio") && !contentType.startsWith("audio/")) {
-            // Default to audio/webm if uploaded under kind=audio
             contentType = "audio/webm";
         }
 
@@ -97,11 +105,16 @@ public class MediaController {
 
             Files.copy(file.getInputStream(), target, StandardCopyOption.REPLACE_EXISTING);
 
-            return ResponseEntity.ok(Map.of(
-                    "url", "/media/files/" + fileName,
-                    "contentType", contentType,
-                    "fileName", file.getOriginalFilename() == null ? fileName : file.getOriginalFilename()
-            ));
+            long bytes = file.getSize();
+            Map<String, Object> result = new HashMap<>();
+            result.put("url", "/media/files/" + fileName);
+            result.put("contentType", contentType);
+            result.put("fileName", file.getOriginalFilename() == null ? fileName : file.getOriginalFilename());
+            result.put("sizeBytes", bytes);
+            result.put("fileSize", formatFileSize(bytes));
+            result.put("kind", normalizedKind);
+
+            return ResponseEntity.ok(result);
         } catch (Exception e) {
             return ResponseEntity.status(500).body(Map.of(
                     "error", "Failed to store media file: " + e.getMessage()
@@ -146,6 +159,13 @@ public class MediaController {
             case "audio/mpeg" -> ".mp3";
             case "audio/mp4" -> ".m4a";
             case "audio/wav" -> ".wav";
+            case "application/pdf" -> ".pdf";
+            case "application/msword" -> ".doc";
+            case "application/vnd.openxmlformats-officedocument.wordprocessingml.document" -> ".docx";
+            case "application/vnd.ms-excel" -> ".xls";
+            case "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" -> ".xlsx";
+            case "text/plain" -> ".txt";
+            case "application/zip" -> ".zip";
             default -> {
                 String ext = StringUtils.getFilenameExtension(originalFileName);
                 yield ext == null ? "" : "." + ext.toLowerCase(Locale.ROOT);

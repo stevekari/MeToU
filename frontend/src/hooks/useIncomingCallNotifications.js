@@ -3,8 +3,10 @@ import { useDispatch, useSelector } from 'react-redux';
 import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
 import { getMyConversations } from '../api/conversationApi';
-import { getWsUrl, getNativeWsUrl } from '../utils/apiBaseUrl';
-import { setUserStatus, setUserStatuses } from '../store/slices/presenceSlice';
+import { getWsUrl } from '../utils/apiBaseUrl';
+import { setUserStatus, setUserStatuses, setTyping, clearTyping } from '../store/slices/presenceSlice';
+import { updateMessage, markMessagesAsReadInConv } from '../store/slices/chatSlice';
+import { callSounds } from '../utils/callSounds';
 
 export function useIncomingCallNotifications(userId, onMessage) {
   const dispatch = useDispatch();
@@ -44,10 +46,14 @@ export function useIncomingCallNotifications(userId, onMessage) {
         const convId = String(conversation.conversationId);
         if (subscriptionsRef.current.has(convId)) return;
 
+        // Main conversation channel (messages, calls, edits, deletes)
         const sub = client.subscribe(`/topic/conversation.${convId}`, (frame) => {
           try {
             const signal = JSON.parse(frame.body);
             if (!signal.callType) {
+              if (signal.action === 'MESSAGE_EDIT' || signal.action === 'MESSAGE_DELETE') {
+                dispatch(updateMessage({ conversationId: convId, message: signal }));
+              }
               onMessageRef.current?.(signal);
               return;
             }
@@ -65,7 +71,14 @@ export function useIncomingCallNotifications(userId, onMessage) {
               return;
             }
 
-            if (signal.callType === 'call-answer' || signal.callType === 'call-end') {
+            if (signal.callType === 'call-end') {
+              callSounds.stop();
+              callSounds.playEndedSound();
+              setIncomingCall(null);
+              return;
+            }
+
+            if (signal.callType === 'call-answer') {
               setIncomingCall(null);
               return;
             }
@@ -89,10 +102,41 @@ export function useIncomingCallNotifications(userId, onMessage) {
           }
         });
 
-        subscriptionsRef.current.set(convId, sub);
+        // Typing channel
+        const typingSub = client.subscribe(`/topic/conversation.${convId}.typing`, (frame) => {
+          try {
+            const typingData = JSON.parse(frame.body);
+            if (String(typingData.userId) !== String(userId)) {
+              dispatch(setTyping(typingData));
+            }
+          } catch (err) {
+            console.warn('Typing parse error', err);
+          }
+        });
+
+        // Read receipts channel
+        const receiptsSub = client.subscribe(`/topic/conversation.${convId}.receipts`, (frame) => {
+          try {
+            const receiptData = JSON.parse(frame.body);
+            dispatch(markMessagesAsReadInConv({
+              conversationId: convId,
+              readerId: receiptData.readerId,
+            }));
+          } catch (err) {
+            console.warn('Receipts parse error', err);
+          }
+        });
+
+        subscriptionsRef.current.set(convId, {
+          unsubscribe: () => {
+            try { sub.unsubscribe(); } catch (_) {}
+            try { typingSub.unsubscribe(); } catch (_) {}
+            try { receiptsSub.unsubscribe(); } catch (_) {}
+          }
+        });
       });
     },
-    [conversations, userId]
+    [conversations, userId, dispatch]
   );
 
   // Stable single-connection lifecycle
@@ -195,6 +239,7 @@ export function useIncomingCallNotifications(userId, onMessage) {
           conversationId: incomingCall.conversationId,
           callType: 'call-end',
           callId: incomingCall.callId,
+          callerId: incomingCall.friend?.id || incomingCall.senderId,
           mediaType: incomingCall.mediaType,
           status: 'missed',
         }),
@@ -211,5 +256,5 @@ export function useIncomingCallNotifications(userId, onMessage) {
     return () => window.clearTimeout(timeoutId);
   }, [incomingCall, declineCall]);
 
-  return { incomingCall, dismissCall, declineCall };
+  return { incomingCall, dismissCall, declineCall, clientRef };
 }

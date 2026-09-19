@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { parseMessageContent } from '../utils/messageContent';
 import { resolveBackendUrl } from '../utils/apiBaseUrl';
 import VoiceMessage from './VoiceMessage';
@@ -26,20 +26,159 @@ function resolveMediaUrl(parsed) {
   return resolveBackendUrl(src);
 }
 
-export default function MessageBubble({ message, isMine }) {
+function getFileIcon(fileName, contentType) {
+  const ext = (fileName || '').split('.').pop()?.toLowerCase();
+  if (ext === 'pdf' || (contentType && contentType.includes('pdf'))) {
+    return 'fa-file-pdf file-icon-pdf';
+  }
+  if (['doc', 'docx'].includes(ext) || (contentType && contentType.includes('word'))) {
+    return 'fa-file-word file-icon-word';
+  }
+  if (['xls', 'xlsx', 'csv'].includes(ext) || (contentType && contentType.includes('sheet'))) {
+    return 'fa-file-excel file-icon-excel';
+  }
+  if (['zip', 'rar', '7z', 'tar', 'gz'].includes(ext) || (contentType && contentType.includes('zip'))) {
+    return 'fa-file-zipper file-icon-zip';
+  }
+  return 'fa-file-lines file-icon-generic';
+}
+
+export default function MessageBubble({
+  message,
+  isMine,
+  onReply,
+  onEdit,
+  onDelete,
+  onScrollToMessage
+}) {
   const { t } = useLanguage();
   const [showFullImage, setShowFullImage] = useState(false);
+  const [showMenu, setShowMenu] = useState(false);
+  const menuRef = useRef(null);
+
+  const isDeleted = Boolean(message.isDeleted);
+  const isEdited = Boolean(message.isEdited);
   const time = formatMessageTime(message.timestamp);
-  const isSeen = Boolean(message.seen || message.read || message.seenAt || message.readAt);
-  const parsed = parseMessageContent(message.content);
+
+  const isRead = message.status === 'READ' || Boolean(message.readAt) || Boolean(message.read) || Boolean(message.seen);
+  const isDelivered = message.status === 'DELIVERED';
+
+  const parsed = isDeleted ? { type: 'text', text: 'This message was deleted' } : parseMessageContent(message.content);
   const mediaSrc = resolveMediaUrl(parsed);
 
-  return (
-    <div className={`message-row ${isMine ? 'mine' : 'theirs'}`}>
-      <div className={`message-bubble ${isMine ? 'mine' : 'theirs'} ${parsed.type === 'audio' ? 'audio-bubble' : ''}`}>
-        {parsed.type === 'text' && <div className="message-content">{parsed.text}</div>}
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (menuRef.current && !menuRef.current.contains(e.target)) {
+        setShowMenu(false);
+      }
+    };
+    if (showMenu) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showMenu]);
 
-        {parsed.type === 'image' && (
+  const handleCopy = () => {
+    if (parsed.text) {
+      navigator.clipboard?.writeText(parsed.text);
+    }
+    setShowMenu(false);
+  };
+
+  return (
+    <div id={`msg-${message.id}`} className={`message-row ${isMine ? 'mine' : 'theirs'} ${isDeleted ? 'deleted-row' : ''}`}>
+      <div className={`message-bubble ${isMine ? 'mine' : 'theirs'} ${parsed.type === 'audio' ? 'audio-bubble' : ''} ${isDeleted ? 'deleted-bubble' : ''}`}>
+
+        {/* Quoted Reply Preview */}
+        {!isDeleted && (message.replyToId || message.replyToContent) && (
+          <div
+            className="reply-quote-preview"
+            onClick={() => message.replyToId && onScrollToMessage?.(message.replyToId)}
+            title="Click to jump to message"
+          >
+            <div className="reply-quote-sender">
+              {message.replyToSenderName || 'Reply'}
+            </div>
+            <div className="reply-quote-text">
+              {message.replyToContent || 'Original message'}
+            </div>
+          </div>
+        )}
+
+        {/* Action Menu (⋮) */}
+        {!isDeleted && (
+          <div className="message-actions-wrapper" ref={menuRef}>
+            <button
+              type="button"
+              className="message-menu-trigger"
+              onClick={() => setShowMenu(!showMenu)}
+              aria-label="Message options"
+            >
+              <i className="fa-solid fa-ellipsis-vertical"></i>
+            </button>
+
+            {showMenu && (
+              <div className="message-dropdown-menu">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowMenu(false);
+                    onReply?.(message);
+                  }}
+                >
+                  <i className="fa-solid fa-reply"></i> Reply
+                </button>
+
+                {parsed.text && (
+                  <button type="button" onClick={handleCopy}>
+                    <i className="fa-regular fa-copy"></i> Copy
+                  </button>
+                )}
+
+                {isMine && parsed.type === 'text' && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowMenu(false);
+                      onEdit?.(message);
+                    }}
+                  >
+                    <i className="fa-solid fa-pen"></i> Edit
+                  </button>
+                )}
+
+                {isMine && (
+                  <button
+                    type="button"
+                    className="danger"
+                    onClick={() => {
+                      setShowMenu(false);
+                      onDelete?.(message.id);
+                    }}
+                  >
+                    <i className="fa-solid fa-trash-can"></i> Delete
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Deleted Message State */}
+        {isDeleted && (
+          <div className="deleted-message-content">
+            <i className="fa-solid fa-ban" style={{ marginRight: '6px', opacity: 0.7 }}></i>
+            <em>This message was deleted</em>
+          </div>
+        )}
+
+        {/* Text Message */}
+        {!isDeleted && parsed.type === 'text' && (
+          <div className="message-content">{parsed.text}</div>
+        )}
+
+        {/* Image Message */}
+        {!isDeleted && parsed.type === 'image' && (
           <>
             <img
               className="message-image clickable-image"
@@ -76,11 +215,40 @@ export default function MessageBubble({ message, isMine }) {
           </>
         )}
 
-        {parsed.type === 'audio' && (
+        {/* File / Document Message */}
+        {!isDeleted && parsed.type === 'file' && (
+          <div className="document-message-card">
+            <div className="document-card-icon">
+              <i className={`fa-solid ${getFileIcon(parsed.fileName, parsed.contentType)}`}></i>
+            </div>
+            <div className="document-card-details">
+              <span className="document-card-name" title={parsed.fileName}>
+                {parsed.fileName || 'Attachment'}
+              </span>
+              {parsed.fileSize && (
+                <span className="document-card-size">{parsed.fileSize}</span>
+              )}
+            </div>
+            <a
+              href={mediaSrc}
+              target="_blank"
+              rel="noreferrer"
+              download={parsed.fileName || 'document'}
+              className="document-download-btn"
+              title="Download File"
+            >
+              <i className="fa-solid fa-arrow-down-to-bracket"></i>
+            </a>
+          </div>
+        )}
+
+        {/* Voice Message */}
+        {!isDeleted && parsed.type === 'audio' && (
           <VoiceMessage src={mediaSrc} durationSec={parsed.durationSec} isMine={isMine} />
         )}
 
-        {parsed.type === 'call' && (
+        {/* Call History Message */}
+        {!isDeleted && parsed.type === 'call' && (
           <div className={`call-history ${parsed.status}`}>
             <i className={`fa-solid ${parsed.mediaType === 'video' ? 'fa-video' : 'fa-phone'}`}></i>
             <span>{t(parsed.mediaType === 'video' ? 'videoCall' : 'voiceCall')}</span>
@@ -88,9 +256,18 @@ export default function MessageBubble({ message, isMine }) {
           </div>
         )}
 
+        {/* Message Meta (Time, Edited label, Read Receipts) */}
         <div className="message-meta">
+          {isEdited && !isDeleted && <span className="message-edited-badge">(edited)</span>}
           <span className="message-time">{time}</span>
-          {isMine && <span className={`message-status ${isSeen ? 'seen' : ''}`}>{isSeen ? '✓✓' : '✓'}</span>}
+          {isMine && !isDeleted && (
+            <span
+              className={`message-status ${isRead ? 'read' : isDelivered ? 'delivered' : 'sent'}`}
+              title={isRead ? 'Read' : isDelivered ? 'Delivered' : 'Sent'}
+            >
+              {isRead ? '✓✓' : isDelivered ? '✓✓' : '✓'}
+            </span>
+          )}
         </div>
       </div>
     </div>

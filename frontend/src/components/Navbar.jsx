@@ -29,8 +29,9 @@ export default function Navbar({ user, onLogout }) {
 
       {user && (
         <div className="navbar-right">
-          <Link to="/friends">{t('friends')}</Link>
-          <Link to="/settings">{t('settings')}</Link>
+          <Link to="/friends" className="nav-desktop-only">{t('friends')}</Link>
+          <Link to="/calls" className="nav-desktop-only">{t('calls')}</Link>
+          <Link to="/settings" className="nav-desktop-only">{t('settings')}</Link>
 
           <div className="navbar-status-wrap">
             <span className={`status-indicator ${myStatus}`} />
@@ -47,9 +48,14 @@ export default function Navbar({ user, onLogout }) {
             </select>
           </div>
 
-          <span className="navbar-username">{user.username}</span>
-          <button onClick={handleLogout}>{t('logout')}</button>
-          <button onClick={toggleTheme} className="theme-toggle" title={t('toggleTheme')}>
+          <span className="navbar-username nav-desktop-only">{user.username}</span>
+
+          <button onClick={handleLogout} className="navbar-logout-btn" title={t('logout')} aria-label={t('logout')}>
+            <i className="fa-solid fa-arrow-right-from-bracket"></i>
+            <span className="nav-logout-text">{t('logout')}</span>
+          </button>
+
+          <button onClick={toggleTheme} className="theme-toggle nav-desktop-only" title={t('toggleTheme')}>
             <i className={`fa-solid ${theme === 'dark' ? 'fa-sun' : 'fa-moon'}`}></i>
           </button>
         </div>

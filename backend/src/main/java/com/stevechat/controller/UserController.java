@@ -1,5 +1,6 @@
 package com.stevechat.controller;
 
+import com.stevechat.config.WebSocketEventListener;
 import com.stevechat.dto.UpdateProfileRequest;
 import com.stevechat.dto.UserDto;
 import com.stevechat.entity.User;
@@ -9,7 +10,9 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/users")
@@ -62,9 +65,35 @@ public class UserController {
         return new UserDto(currentUser(auth));
     }
 
+    @GetMapping("/{id}/profile")
+    public ResponseEntity<UserDto> getUserProfile(@PathVariable Long id) {
+        return userRepository.findById(id)
+                .map(UserDto::new)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
+    }
+
     @GetMapping("/presence")
-    public java.util.Map<Long, String> getPresence() {
-        return ChatWebSocketController.getUserStatuses();
+    public Map<Long, Map<String, Object>> getPresence() {
+        Map<Long, String> statusMap = WebSocketEventListener.getUserStatuses();
+        List<User> users = userRepository.findAll();
+        Map<Long, Map<String, Object>> result = new HashMap<>();
+
+        for (User u : users) {
+            Map<String, Object> p = new HashMap<>();
+            boolean isOnline = WebSocketEventListener.isUserOnline(u.getId());
+            String status = statusMap.getOrDefault(u.getId(), u.getCustomStatus() != null ? u.getCustomStatus() : "offline");
+            if (!isOnline && "online".equals(status)) {
+                status = "offline";
+            }
+            p.put("status", status);
+            p.put("online", isOnline);
+            p.put("lastSeen", u.getLastSeen());
+            p.put("displayName", u.getDisplayName());
+            result.put(u.getId(), p);
+        }
+
+        return result;
     }
 
     @PutMapping("/me")
@@ -79,8 +108,21 @@ public class UserController {
             me.setUsername(request.getUsername());
         }
 
+        if (request.getDisplayName() != null) {
+            me.setDisplayName(request.getDisplayName());
+        }
+
         if (request.getAvatarUrl() != null) {
             me.setAvatarUrl(request.getAvatarUrl());
+        }
+
+        if (request.getBio() != null) {
+            me.setBio(request.getBio());
+        }
+
+        if (request.getCustomStatus() != null && !request.getCustomStatus().isBlank()) {
+            me.setCustomStatus(request.getCustomStatus());
+            WebSocketEventListener.setUserCustomStatus(me.getId(), request.getCustomStatus());
         }
 
         if (request.getNewPassword() != null && !request.getNewPassword().isBlank()) {

@@ -6,9 +6,23 @@ import './index.css';
 import { ThemeProvider } from './contexts/ThemeContext.jsx';
 import { Provider } from 'react-redux';
 import { store } from './store/store.js';
+import { registerServiceWorker } from './utils/registerServiceWorker';
+
+registerServiceWorker();
 
 if (typeof globalThis.global === 'undefined') {
   globalThis.global = globalThis;
+}
+
+// Map legacy 'unload' event listeners to 'pagehide' to prevent browser permissions policy violations
+if (typeof window !== 'undefined' && window.addEventListener) {
+  const originalAddEventListener = window.addEventListener.bind(window);
+  window.addEventListener = (type, listener, options) => {
+    if (type === 'unload') {
+      return originalAddEventListener('pagehide', listener, options);
+    }
+    return originalAddEventListener(type, listener, options);
+  };
 }
 
 ReactDOM.createRoot(document.getElementById('root')).render(

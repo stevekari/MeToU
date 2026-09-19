@@ -134,35 +134,7 @@
 }
 
 @media (max-width: 768px) {
-    .footer-content {
-        grid-template-columns: 1fr auto;
-        height: 92px;
-        padding: 12px 14px;
-        gap: 10px;
-    }
-
-    .footer-links {
-        display: none;
-    }
-
-    .footer-social h4 {
-        display: none;
-    }
-
-    .social-icons {
-        gap: 6px;
-    }
-
-    .footer-bottom {
-        height: 52px;
-        padding: 9px 14px;
-        flex-direction: row;
-        text-align: center;
-        justify-content: center;
-        gap: 4px 12px;
-    }
-
-    .footer-bottom p {
-        margin: 0;
+    .app-footer {
+        display: none !important;
     }
 }
