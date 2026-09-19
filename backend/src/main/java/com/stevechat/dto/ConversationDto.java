@@ -7,12 +7,22 @@ public class ConversationDto {
     private UserDto otherUser;
     private String lastMessage;
     private LocalDateTime lastMessageTime;
+    private String status;
+    private Long initiatorId;
+
+    public ConversationDto() {}
 
     public ConversationDto(Long conversationId, UserDto otherUser, String lastMessage, LocalDateTime lastMessageTime) {
+        this(conversationId, otherUser, lastMessage, lastMessageTime, "ACCEPTED", null);
+    }
+
+    public ConversationDto(Long conversationId, UserDto otherUser, String lastMessage, LocalDateTime lastMessageTime, String status, Long initiatorId) {
         this.conversationId = conversationId;
         this.otherUser = otherUser;
         this.lastMessage = lastMessage;
         this.lastMessageTime = lastMessageTime;
+        this.status = status != null ? status : "ACCEPTED";
+        this.initiatorId = initiatorId;
     }
 
     public Long getConversationId() { return conversationId; }
@@ -26,4 +36,11 @@ public class ConversationDto {
 
     public LocalDateTime getLastMessageTime() { return lastMessageTime; }
     public void setLastMessageTime(LocalDateTime lastMessageTime) { this.lastMessageTime = lastMessageTime; }
+
+    public String getStatus() { return status; }
+    public void setStatus(String status) { this.status = status; }
+
+    public Long getInitiatorId() { return initiatorId; }
+    public void setInitiatorId(Long initiatorId) { this.initiatorId = initiatorId; }
 }
+

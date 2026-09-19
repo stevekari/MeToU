@@ -1,6 +1,13 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { useLocation, useParams, useNavigate } from 'react-router-dom';
-import { getMessages, getMyConversations, startConversation } from '../api/conversationApi';
+import {
+  getMessages,
+  getMyConversations,
+  startConversation,
+  getConversationDetails,
+  acceptChatRequest,
+  declineChatRequest,
+} from '../api/conversationApi';
 import { searchUsers, getPresenceMap } from '../api/userApi';
 import { useWebSocket } from '../hooks/useWebSocket';
 import MessageBubble from '../components/MessageBubble';
@@ -32,6 +39,9 @@ export default function Chat({ currentUserId }) {
 
   const [messages, setMessages] = useState([]);
   const [conversations, setConversations] = useState([]);
+  const [conversationStatus, setConversationStatus] = useState('ACCEPTED');
+  const [conversationInitiatorId, setConversationInitiatorId] = useState(null);
+  const [requestActionLoading, setRequestActionLoading] = useState(false);
   const [search, setSearch] = useState('');
   const [searchFocused, setSearchFocused] = useState(false);
   const [searchResults, setSearchResults] = useState([]);
@@ -73,28 +83,21 @@ export default function Chat({ currentUserId }) {
   const handleIncoming = useCallback((message) => {
     if (!message) return;
 
+    if (message.type === 'CONVERSATION_ACCEPTED' || message.status === 'ACCEPTED') {
+      setConversationStatus('ACCEPTED');
+    }
+    if (message.type === 'CONVERSATION_DECLINED' || message.status === 'DECLINED') {
+      setConversationStatus('DECLINED');
+    }
+
     setMessages((prev) => {
       const list = Array.isArray(prev) ? prev : [];
       if (message.id && list.some((m) => m.id === message.id)) {
         return list.map((m) => (m.id === message.id ? { ...m, ...message } : m));
       }
-      return [...list, message];
+      return message.content ? [...list, message] : list;
     });
 
-    setConversations((prev) => {
-      const list = Array.isArray(prev) ? prev : [];
-      const updated = list.map((c) =>
-        String(c.conversationId) === String(message.conversationId)
-          ? {
-              ...c,
-              lastMessage: message.isDeleted ? 'This message was deleted' : message.content,
-              lastMessageTime: message.timestamp || new Date().toISOString(),
-              lastMessageAt: message.timestamp || new Date().toISOString(),
-            }
-          : c
-      );
-      return sortConversations(updated);
-    });
   }, []);
 
   const handleReceipt = useCallback((receipt) => {
@@ -118,6 +121,7 @@ export default function Chat({ currentUserId }) {
     sendDelete,
     sendCallSignal,
   } = useWebSocket(conversationId, handleIncoming, setCallSignal, handleReceipt);
+
 
   const handleSend = useCallback(
     (content, replyToId, replyToSenderName, replyToContent) => {
@@ -251,15 +255,75 @@ export default function Chat({ currentUserId }) {
         const sorted = sortConversations(conversationsData);
         setConversations(sorted);
 
-        if (!selectedFriend) {
-          const currentConversation = sorted.find(
-            (c) => String(c.conversationId) === String(conversationId)
-          );
-          setFriend(currentConversation?.otherUser ?? null);
+        const currentConversation = sorted.find(
+          (c) => String(c.conversationId) === String(conversationId)
+        );
+        if (currentConversation) {
+          if (currentConversation.status) {
+            setConversationStatus(currentConversation.status);
+          }
+          if (currentConversation.initiatorId != null) {
+            setConversationInitiatorId(currentConversation.initiatorId);
+          }
+          if (!selectedFriend && currentConversation.otherUser) {
+            setFriend(currentConversation.otherUser);
+          }
         }
       })
       .finally(() => setSidebarLoading(false));
   }, [conversationId, selectedFriend]);
+
+  useEffect(() => {
+    if (!conversationId) return;
+    getConversationDetails(conversationId)
+      .then((conv) => {
+        if (conv) {
+          if (conv.status) setConversationStatus(conv.status);
+          if (conv.initiatorId != null) setConversationInitiatorId(conv.initiatorId);
+          if (conv.otherUser && !selectedFriend) {
+            setFriend(conv.otherUser);
+          }
+        }
+      })
+      .catch(() => {});
+  }, [conversationId, selectedFriend]);
+
+  const handleAcceptRequest = async () => {
+    try {
+      setRequestActionLoading(true);
+      await acceptChatRequest(conversationId);
+      setConversationStatus('ACCEPTED');
+      setConversations((prev) => {
+        const list = Array.isArray(prev) ? prev : [];
+        return list.map((c) =>
+          String(c.conversationId) === String(conversationId) ? { ...c, status: 'ACCEPTED' } : c
+        );
+      });
+    } catch (err) {
+      console.error('Failed to accept chat request:', err);
+    } finally {
+      setRequestActionLoading(false);
+    }
+  };
+
+  const handleDeclineRequest = async () => {
+    try {
+      setRequestActionLoading(true);
+      await declineChatRequest(conversationId);
+      setConversationStatus('DECLINED');
+      setConversations((prev) => {
+        const list = Array.isArray(prev) ? prev : [];
+        return list.map((c) =>
+          String(c.conversationId) === String(conversationId) ? { ...c, status: 'DECLINED' } : c
+        );
+      });
+    } catch (err) {
+      console.error('Failed to decline chat request:', err);
+    } finally {
+      setRequestActionLoading(false);
+    }
+  };
+
 
   useEffect(() => {
     setLoading(true);
@@ -320,6 +384,12 @@ export default function Chat({ currentUserId }) {
   };
 
   const friendDisplayName = friend?.displayName || friend?.username || 'User';
+
+  const isPending = conversationStatus === 'PENDING';
+  const isDeclined = conversationStatus === 'DECLINED';
+  const isAccepted = conversationStatus === 'ACCEPTED' || (!isPending && !isDeclined);
+  const isInitiator = conversationInitiatorId != null && String(conversationInitiatorId) === String(currentUserId);
+  const isRecipient = isPending && !isInitiator;
 
   return (
     <div className="chat-layout-page">
@@ -448,18 +518,18 @@ export default function Chat({ currentUserId }) {
                 <button
                   type="button"
                   onClick={() => call.startCall('voice')}
-                  disabled={call.callState !== 'idle'}
+                  disabled={call.callState !== 'idle' || !isAccepted}
                   aria-label="Start voice call"
-                  title="Start voice call"
+                  title={!isAccepted ? 'Calls available once request is accepted' : 'Start voice call'}
                 >
                   <i className="fa-solid fa-phone"></i>
                 </button>
                 <button
                   type="button"
                   onClick={() => call.startCall('video')}
-                  disabled={call.callState !== 'idle'}
+                  disabled={call.callState !== 'idle' || !isAccepted}
                   aria-label="Start video call"
-                  title="Start video call"
+                  title={!isAccepted ? 'Calls available once request is accepted' : 'Start video call'}
                 >
                   <i className="fa-solid fa-video"></i>
                 </button>
@@ -511,6 +581,57 @@ export default function Chat({ currentUserId }) {
           <div ref={messagesEndRef} />
         </div>
 
+        {/* Chat Request Status Banners */}
+        {isRecipient && (
+          <div className="chat-request-bar incoming-request">
+            <div className="chat-request-bar-content">
+              <div className="chat-request-icon-wrap">
+                <i className="fa-solid fa-user-plus"></i>
+              </div>
+              <div className="chat-request-info">
+                <strong>{friendDisplayName}</strong> sent you a chat request.
+                <span>Accept to start chatting and making voice & video calls.</span>
+              </div>
+            </div>
+            <div className="chat-request-buttons">
+              <button
+                type="button"
+                className="btn-req-accept"
+                onClick={handleAcceptRequest}
+                disabled={requestActionLoading}
+              >
+                <i className="fa-solid fa-check"></i> Accept
+              </button>
+              <button
+                type="button"
+                className="btn-req-decline"
+                onClick={handleDeclineRequest}
+                disabled={requestActionLoading}
+              >
+                <i className="fa-solid fa-xmark"></i> Decline
+              </button>
+            </div>
+          </div>
+        )}
+
+        {isPending && isInitiator && (
+          <div className="chat-request-bar pending-request">
+            <i className="fa-regular fa-clock pending-clock-icon"></i>
+            <div className="chat-request-info">
+              <span>Waiting for <strong>{friendDisplayName}</strong> to accept your chat request.</span>
+            </div>
+          </div>
+        )}
+
+        {isDeclined && (
+          <div className="chat-request-bar declined-request">
+            <i className="fa-solid fa-ban declined-ban-icon"></i>
+            <div className="chat-request-info">
+              <span>This chat request was declined.</span>
+            </div>
+          </div>
+        )}
+
         <CallPanel
           callState={call.callState}
           callType={call.callType}
@@ -536,8 +657,17 @@ export default function Chat({ currentUserId }) {
           editingMessage={editingMessage}
           onSaveEdit={handleSaveEdit}
           onCancelEdit={() => setEditingMessage(null)}
+          disabled={!isAccepted && isRecipient ? true : isDeclined ? true : false}
+          disabledPlaceholder={
+            isRecipient
+              ? 'Accept chat request to send messages...'
+              : isDeclined
+              ? 'Chat request was declined'
+              : ''
+          }
         />
       </section>
+
 
       {selectedProfileUser && (
         <UserProfileModal

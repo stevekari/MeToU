@@ -4,9 +4,25 @@ export function startConversation(friendId) {
   return api.post('/conversations/start', { friendId }).then((res) => res.data);
 }
 
+export function getConversationDetails(conversationId) {
+  if (!conversationId) return Promise.resolve(null);
+  return api.get(`/conversations/${conversationId}`).then((res) => res.data).catch(() => null);
+}
+
+export function acceptChatRequest(conversationId) {
+  if (!conversationId) return Promise.resolve(null);
+  return api.post(`/conversations/${conversationId}/accept`).then((res) => res.data);
+}
+
+export function declineChatRequest(conversationId) {
+  if (!conversationId) return Promise.resolve(null);
+  return api.post(`/conversations/${conversationId}/decline`).then((res) => res.data);
+}
+
 export function getMyConversations() {
   return api.get('/conversations/mine').then((res) => Array.isArray(res.data) ? res.data : []).catch(() => []);
 }
+
 
 export function getMessages(conversationId) {
   if (!conversationId) return Promise.resolve([]);

@@ -71,9 +71,99 @@ public class ConversationController {
         Long b = Math.max(me.getId(), friendId);
 
         Conversation conversation = conversationRepository.findByUserAIdAndUserBId(a, b)
-                .orElseGet(() -> conversationRepository.save(new Conversation(a, b)));
+                .orElseGet(() -> conversationRepository.save(new Conversation(a, b, me.getId(), "PENDING")));
 
-        return ResponseEntity.ok(Map.of("conversationId", conversation.getId()));
+        Map<String, Object> resp = new HashMap<>();
+        resp.put("conversationId", conversation.getId());
+        resp.put("status", conversation.getStatus() != null ? conversation.getStatus() : "ACCEPTED");
+        resp.put("initiatorId", conversation.getInitiatorId());
+        return ResponseEntity.ok(resp);
+    }
+
+    // Get single conversation details
+    @GetMapping("/{id}")
+    public ResponseEntity<?> getConversation(@PathVariable Long id, Authentication auth) {
+        User me = currentUser(auth);
+        Conversation conv = conversationRepository.findById(id).orElse(null);
+        if (conv == null) {
+            return ResponseEntity.notFound().build();
+        }
+        if (!conv.getUserAId().equals(me.getId()) && !conv.getUserBId().equals(me.getId())) {
+            return ResponseEntity.status(403).body("Not part of this conversation");
+        }
+
+        Long otherId = conv.getUserAId().equals(me.getId()) ? conv.getUserBId() : conv.getUserAId();
+        User other = userRepository.findById(otherId).orElse(null);
+        UserDto otherDto = other != null ? new UserDto(other) : null;
+
+        Message last = messageRepository
+                .findTopByConversationIdOrderByTimestampDesc(conv.getId())
+                .orElse(null);
+
+        String lastContent = null;
+        if (last != null) {
+            lastContent = last.getIsDeleted() ? "This message was deleted" : last.getContent();
+        }
+
+        ConversationDto dto = new ConversationDto(
+                conv.getId(),
+                otherDto,
+                lastContent,
+                last != null ? last.getTimestamp() : conv.getCreatedAt(),
+                conv.getStatus() != null ? conv.getStatus() : "ACCEPTED",
+                conv.getInitiatorId()
+        );
+        return ResponseEntity.ok(dto);
+    }
+
+    // Accept chat request
+    @PostMapping("/{id}/accept")
+    public ResponseEntity<?> acceptRequest(@PathVariable Long id, Authentication auth) {
+        User me = currentUser(auth);
+        Conversation conv = conversationRepository.findById(id).orElse(null);
+        if (conv == null) {
+            return ResponseEntity.notFound().build();
+        }
+        if (!conv.getUserAId().equals(me.getId()) && !conv.getUserBId().equals(me.getId())) {
+            return ResponseEntity.status(403).body("Not part of this conversation");
+        }
+
+        conv.setStatus("ACCEPTED");
+        conversationRepository.save(conv);
+
+        Map<String, Object> event = new HashMap<>();
+        event.put("type", "CONVERSATION_ACCEPTED");
+        event.put("conversationId", id);
+        event.put("status", "ACCEPTED");
+        event.put("acceptedBy", me.getId());
+        messagingTemplate.convertAndSend("/topic/conversation." + id, event);
+
+        return ResponseEntity.ok(Map.of("success", true, "status", "ACCEPTED", "conversationId", id));
+    }
+
+    // Decline chat request
+    @PostMapping("/{id}/decline")
+    public ResponseEntity<?> declineRequest(@PathVariable Long id, Authentication auth) {
+        User me = currentUser(auth);
+        Conversation conv = conversationRepository.findById(id).orElse(null);
+        if (conv == null) {
+            return ResponseEntity.notFound().build();
+        }
+        if (!conv.getUserAId().equals(me.getId()) && !conv.getUserBId().equals(me.getId())) {
+            return ResponseEntity.status(403).body("Not part of this conversation");
+        }
+
+        conv.setStatus("DECLINED");
+        conversationRepository.save(conv);
+
+        Map<String, Object> event = new HashMap<>();
+        event.put("type", "CONVERSATION_DECLINED");
+        event.put("conversationId", id);
+        event.put("status", "DECLINED");
+        event.put("declinedBy", me.getId());
+        messagingTemplate.convertAndSend("/topic/conversation." + id, event);
+
+        return ResponseEntity.ok(Map.of("success", true, "status", "DECLINED", "conversationId", id));
     }
 
     // List all of my conversations with a preview of the last message
@@ -101,7 +191,9 @@ public class ConversationController {
                             conv.getId(),
                             otherDto,
                             lastContent,
-                            last != null ? last.getTimestamp() : conv.getCreatedAt()
+                            last != null ? last.getTimestamp() : conv.getCreatedAt(),
+                            conv.getStatus() != null ? conv.getStatus() : "ACCEPTED",
+                            conv.getInitiatorId()
                     );
                 })
                 .toList();
@@ -112,6 +204,7 @@ public class ConversationController {
     public ResponseEntity<?> getMessages(@PathVariable Long id, Authentication auth) {
         User me = currentUser(auth);
         Conversation conv = conversationRepository.findById(id).orElse(null);
+
 
         if (conv == null) {
             return ResponseEntity.notFound().build();

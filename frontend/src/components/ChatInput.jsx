@@ -32,7 +32,9 @@ export default function ChatInput({
   onCancelReply,
   editingMessage,
   onSaveEdit,
-  onCancelEdit
+  onCancelEdit,
+  disabled = false,
+  disabledPlaceholder = '',
 }) {
   const [text, setText] = useState('');
   const [recording, setRecording] = useState(false);
@@ -63,7 +65,8 @@ export default function ChatInput({
   const attachMenuRef = useRef(null);
   const { t } = useLanguage();
 
-  const isBusy = uploadingVoice || uploadingFile;
+  const isBusy = uploadingVoice || uploadingFile || disabled;
+
 
   // Sync editing message text into input
   useEffect(() => {
@@ -739,12 +742,15 @@ export default function ChatInput({
                 className="wa-input-field"
                 value={text}
                 placeholder={
-                  editingMessage
+                  disabled
+                    ? (disabledPlaceholder || 'Chat is locked')
+                    : editingMessage
                     ? 'Update message...'
                     : (imageDraft || documentDraft)
                     ? 'Add a caption...'
                     : t('typeMessage')
                 }
+
                 onChange={handleTextChange}
                 onBlur={stopTypingNow}
                 disabled={isBusy}

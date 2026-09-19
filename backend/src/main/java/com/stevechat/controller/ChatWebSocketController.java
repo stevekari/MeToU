@@ -59,6 +59,21 @@ public class ChatWebSocketController {
             throw new RuntimeException("Not part of this conversation");
         }
 
+        if ("DECLINED".equalsIgnoreCase(conv.getStatus())) {
+            throw new RuntimeException("Conversation was declined");
+        }
+
+        // If recipient sends a message while status is PENDING, auto-accept
+        if ("PENDING".equalsIgnoreCase(conv.getStatus()) && conv.getInitiatorId() != null && !conv.getInitiatorId().equals(senderId)) {
+            conv.setStatus("ACCEPTED");
+            conversationRepository.save(conv);
+            Map<String, Object> event = new HashMap<>();
+            event.put("type", "CONVERSATION_ACCEPTED");
+            event.put("conversationId", conv.getId());
+            event.put("status", "ACCEPTED");
+            messagingTemplate.convertAndSend("/topic/conversation." + conv.getId(), event);
+        }
+
         Message message = new Message(
                 request.getConversationId(),
                 senderId,
@@ -74,6 +89,7 @@ public class ChatWebSocketController {
         messagingTemplate.convertAndSend("/topic/conversation." + request.getConversationId(), dto);
         return dto;
     }
+
 
     // Real-time path: client sends STOMP frame to /app/chat.send
     @MessageMapping("/chat.send")
