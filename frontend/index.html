@@ -24,6 +24,20 @@
     <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
     <link rel="shortcut icon" href="/gc.png" />
 
+    <script>
+      window.__pwaPrompt = null;
+      window.addEventListener("beforeinstallprompt", function (e) {
+        e.preventDefault();
+        window.__pwaPrompt = e;
+        window.dispatchEvent(
+          new CustomEvent("pwa-prompt-ready", { detail: e }),
+        );
+      });
+      window.addEventListener("appinstalled", function () {
+        window.__pwaPrompt = null;
+      });
+    </script>
+
     <!-- Apple iOS PWA Meta Tags & Touch Icons -->
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta
