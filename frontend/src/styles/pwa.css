@@ -308,6 +308,26 @@
   transform: translateY(-1px);
 }
 
+.pwa-browser-notice {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(99, 102, 241, 0.12);
+  border: 1px solid rgba(99, 102, 241, 0.3);
+  color: #c7d2fe;
+  font-size: 0.82rem;
+  line-height: 1.35;
+  padding: 10px 12px;
+  border-radius: 10px;
+  margin-bottom: 12px;
+}
+
+:root[data-theme="light"] .pwa-browser-notice {
+  background: #eef2ff;
+  border: 1px solid #c7d2fe;
+  color: #3730a3;
+}
+
 .pwa-ios-modal-done-btn {
   width: 100%;
   background: rgba(255, 255, 255, 0.1);

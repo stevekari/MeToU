@@ -200,17 +200,31 @@ export default function PWAInstallBanner() {
               )}
             </div>
 
-            {canInstall && (
+            {canInstall ? (
               <button
                 type="button"
                 className="pwa-modal-install-action"
                 onClick={async () => {
-                  await triggerInstall();
-                  setShowGuideModal(false);
+                  const outcome = await triggerInstall();
+                  if (outcome === 'accepted') {
+                    setShowGuideModal(false);
+                    setIsVisible(false);
+                  }
                 }}
               >
-                <i className="fa-solid fa-download"></i> Install Now
+                <i className="fa-solid fa-download"></i> Install GioChat Now
               </button>
+            ) : (
+              <div className="pwa-browser-notice">
+                <i className="fa-solid fa-circle-info"></i>
+                <span>
+                  {activeGuideTab === 'android'
+                    ? 'PWAs install directly through Chrome. Follow the 3 steps above to add GioChat to your home screen!'
+                    : activeGuideTab === 'ios'
+                    ? 'On iPhone/iPad, use Safari’s Share button (⬆️) and select "Add to Home Screen".'
+                    : 'Use your browser menu to install GioChat directly to your desktop.'}
+                </span>
+              </div>
             )}
 
             <button
@@ -218,7 +232,7 @@ export default function PWAInstallBanner() {
               className="pwa-ios-modal-done-btn"
               onClick={() => setShowGuideModal(false)}
             >
-              Got it
+              Close Guide
             </button>
           </div>
         </div>
@@ -226,3 +240,4 @@ export default function PWAInstallBanner() {
     </>
   );
 }
+
