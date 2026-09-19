@@ -26,12 +26,14 @@
 
     <script>
       window.__pwaPrompt = null;
-      window.addEventListener('beforeinstallprompt', function (e) {
+      window.addEventListener("beforeinstallprompt", function (e) {
         e.preventDefault();
         window.__pwaPrompt = e;
-        window.dispatchEvent(new CustomEvent('pwa-prompt-ready', { detail: e }));
+        window.dispatchEvent(
+          new CustomEvent("pwa-prompt-ready", { detail: e }),
+        );
       });
-      window.addEventListener('appinstalled', function () {
+      window.addEventListener("appinstalled", function () {
         window.__pwaPrompt = null;
       });
     </script>
@@ -63,7 +65,7 @@
       sizes="512x512"
       href="/icons/icon-512x512.png"
     />
-    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="manifest" href="/manifest.json" />
 
     <!-- Fonts & Icons -->
     <link
@@ -103,7 +105,7 @@
     />
 
     <title>Steve Chat</title>
-    <script type="module" crossorigin src="/assets/index-CT3Wu-b0.js"></script>
+    <script type="module" crossorigin src="/assets/index-CfiD7MbN.js"></script>
     <link rel="stylesheet" crossorigin href="/assets/index-CSaMnKkj.css">
   </head>
 

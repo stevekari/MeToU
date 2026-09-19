@@ -1,54 +1,75 @@
 import { useState, useEffect } from 'react';
-import { useLanguage } from '../contexts/LanguageContext';
-import { usePWA } from '../hooks/usePWA';
 import gcLogo from '../assets/gc.png';
 import '../styles/pwa.css';
 
 export default function PWAInstallBanner() {
-  const { t } = useLanguage();
-  const { isStandalone, triggerInstall } = usePWA();
-  const [isVisible, setIsVisible] = useState(false);
+  const [deferredPrompt, setDeferredPrompt] = useState(
+    typeof window !== 'undefined' ? window.deferredPrompt || window.__pwaPrompt || null : null
+  );
+  const [isStandalone, setIsStandalone] = useState(false);
 
   useEffect(() => {
-    if (isStandalone) {
-      setIsVisible(false);
+    // Check if app is already running as standalone PWA
+    const isApp =
+      window.matchMedia('(display-mode: standalone)').matches ||
+      window.navigator.standalone === true;
+    setIsStandalone(isApp);
+
+    if (isApp) return;
+
+    const handleBeforeInstall = (e) => {
+    };
+
+    const handleAppInstalled = () => {
+      window.deferredPrompt = null;
+      window.__pwaPrompt = null;
+      setDeferredPrompt(null);
+      setIsStandalone(true);
+    };
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstall);
+    window.addEventListener('appinstalled', handleAppInstalled);
+
+    if (window.deferredPrompt || window.__pwaPrompt) {
+      setDeferredPrompt(window.deferredPrompt || window.__pwaPrompt);
+    }
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstall);
+      window.removeEventListener('appinstalled', handleAppInstalled);
+    };
+  }, []);
+
+  const handleInstallClick = async () => {
+    const promptEvent = deferredPrompt || window.deferredPrompt || window.__pwaPrompt;
+    if (!promptEvent) {
       return;
     }
 
-    const isDismissed = sessionStorage.getItem('pwa_install_dismissed') === 'true';
-    if (!isDismissed) {
-      const timer = setTimeout(() => {
-        setIsVisible(true);
-      }, 1000);
-      return () => clearTimeout(timer);
-    }
-  }, [isStandalone]);
-
-  const handleInstallClick = async () => {
     try {
-      const outcome = await triggerInstall();
-      if (outcome === 'accepted') {
-        setIsVisible(false);
+      promptEvent.prompt();
+      const choice = await promptEvent.userChoice;
+      if (choice?.outcome === 'accepted') {
+        window.deferredPrompt = null;
+        window.__pwaPrompt = null;
+        setDeferredPrompt(null);
       }
     } catch (err) {
-      console.warn('[PWA] direct install error:', err);
+      console.warn('[PWA] install error:', err);
     }
   };
 
-  const handleDismiss = () => {
-    setIsVisible(false);
-    sessionStorage.setItem('pwa_install_dismissed', 'true');
-  };
-
-  if (isStandalone || !isVisible) return null;
+  if (isStandalone || !deferredPrompt) {
+    return null;
+  }
 
   return (
-    <div className="pwa-install-banner" role="region" aria-label={t('installApp')}>
+    <div className="pwa-install-banner" role="region" aria-label="Install GioChat">
       <div className="pwa-banner-content">
         <img src={gcLogo} alt="GioChat" className="pwa-banner-icon" />
         <div className="pwa-banner-text">
-          <span className="pwa-banner-title">{t('installApp')}</span>
-          <span className="pwa-banner-desc">{t('installAppDesc')}</span>
+          <span className="pwa-banner-title">Install GioChat</span>
+          <span className="pwa-banner-desc">Add to Home screen or desktop</span>
         </div>
       </div>
       <div className="pwa-banner-actions">
@@ -58,13 +79,13 @@ export default function PWAInstallBanner() {
           onClick={handleInstallClick}
         >
           <i className="fa-solid fa-download" style={{ marginRight: '6px' }}></i>
-          {t('install')}
+          Install
         </button>
         <button
           type="button"
           className="pwa-dismiss-btn"
-          onClick={handleDismiss}
-          aria-label={t('cancel')}
+          onClick={() => setDeferredPrompt(null)}
+          aria-label="Dismiss"
         >
           <i className="fa-solid fa-xmark"></i>
         </button>
