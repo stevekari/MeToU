@@ -48,6 +48,7 @@ export default function ChatInput({
   const [inputError, setInputError] = useState('');
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [showAttachMenu, setShowAttachMenu] = useState(false);
+  const [isSendingAnim, setIsSendingAnim] = useState(false);
 
   const mediaRecorderRef = useRef(null);
   const chunksRef = useRef([]);
@@ -216,6 +217,9 @@ export default function ChatInput({
 
     const trimmed = text.trim();
     if (!trimmed) return;
+
+    setIsSendingAnim(true);
+    setTimeout(() => setIsSendingAnim(false), 500);
 
     if (editingMessage) {
       onSaveEdit?.(editingMessage.id, trimmed);
@@ -783,7 +787,7 @@ export default function ChatInput({
 
             <button
               type="submit"
-              className="chat-submit"
+              className={`chat-submit ${isSendingAnim ? 'sending-active' : ''}`}
               disabled={isBusy || (!text.trim() && !imageDraft && !documentDraft)}
               aria-label="Send message"
             >
