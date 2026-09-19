@@ -1,5 +1,11 @@
 export function getApiBaseUrl() {
-  return window.location.hostname === 'localhost' ? 'http://localhost:10000' : '';
+  const isLocal =
+    typeof window !== 'undefined' &&
+    (window.location.hostname === 'localhost' ||
+      window.location.hostname === '127.0.0.1' ||
+      window.location.hostname.endsWith('.local'));
+
+  return isLocal ? 'http://localhost:10000' : 'https://metou-yyau.onrender.com';
 }
 
 export function getWsUrl() {

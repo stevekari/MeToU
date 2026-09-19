@@ -7,3 +7,7 @@ export function register(username, email, password) {
 export function login(username, password) {
   return api.post('/auth/login', { username, password }).then((res) => res.data);
 }
+
+export function loginWithGoogleApi(googleUserData) {
+  return api.post('/auth/google', googleUserData).then((res) => res.data);
+}

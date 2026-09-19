@@ -11,6 +11,9 @@ export default defineConfig({
   plugins: [react()],
   server: {
     port: 5173,
+    headers: {
+      "Cross-Origin-Opener-Policy": "same-origin-allow-popups",
+    },
     proxy: {
       "/api": {
         target: "http://localhost:10000",
@@ -26,11 +29,11 @@ export default defineConfig({
         changeOrigin: true,
       },
     },
-    "/api": { target: "https://metou-yyau.onrender.com", changeOrigin: true },
-    "/socket.io": {
-      target: "https://metou-yyau.onrender.com",
-      changeOrigin: true,
-      ws: true,
+  },
+  preview: {
+    headers: {
+      "Cross-Origin-Opener-Policy": "same-origin-allow-popups",
     },
   },
 });
+

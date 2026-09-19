@@ -22,6 +22,7 @@ public class User {
     @Column(nullable = false)
     private String password;
 
+    @Column(length = 2048)
     private String avatarUrl;
 
     @Column(length = 500)

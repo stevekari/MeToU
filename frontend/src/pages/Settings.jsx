@@ -7,6 +7,8 @@ import { resolveAvatarUrl } from '../utils/avatarUrl';
 import { useTheme } from '../contexts/ThemeContext.jsx';
 import { useLanguage } from '../contexts/LanguageContext';
 import { setMyStatus } from '../store/slices/presenceSlice';
+import { usePWA } from '../hooks/usePWA';
+import gcLogo from '../assets/gc.png';
 
 export default function Settings({ user, onProfileUpdate }) {
   const navigate = useNavigate();
@@ -15,6 +17,8 @@ export default function Settings({ user, onProfileUpdate }) {
   const onlineIds = useSelector((s) => s.presence?.onlineIds || []);
   const myStatus = useSelector((s) => s.presence?.myStatus || 'online');
   const { language, setLanguage, languageOptions, t } = useLanguage();
+  const { isStandalone, canInstall, isIOS, isAndroid, triggerInstall } = usePWA();
+  const [deviceTab, setDeviceTab] = useState(isIOS ? 'ios' : isAndroid ? 'android' : 'desktop');
 
   const [username, setUsername] = useState(user?.username || '');
   const [displayName, setDisplayName] = useState(user?.displayName || user?.username || '');
@@ -112,6 +116,9 @@ export default function Settings({ user, onProfileUpdate }) {
         </button>
         <button className={tab === 'security' ? 'active' : ''} onClick={() => setTab('security')}>
           <i className="fa-solid fa-lock"></i> {t('security')}
+        </button>
+        <button className={tab === 'pwa' ? 'active' : ''} onClick={() => setTab('pwa')}>
+          <i className="fa-solid fa-mobile-screen"></i> {t('installApp')}
         </button>
       </aside>
 
@@ -226,6 +233,141 @@ export default function Settings({ user, onProfileUpdate }) {
             <div className="setting-row">
               <div><h4>{t('onlineStatus')}</h4><p>{t('onlineFriends', { count: onlineIds.length })}</p></div>
               <span className="badge success">{t('activeOnline', { count: onlineIds.length })}</span>
+            </div>
+          </div>
+        )}
+
+        {tab === 'pwa' && (
+          <div className="settings-card">
+            <div className="pwa-settings-hero">
+              <img src={gcLogo} alt="GioChat" className="pwa-settings-icon" />
+              <div>
+                <h2>{t('installApp')}</h2>
+                <p className="settings-sub">{t('installAppDesc')}</p>
+                <div className="pwa-status-badge">
+                  <span className={`status-dot ${isStandalone ? 'online' : 'busy'}`}></span>
+                  {isStandalone ? 'Installed as App' : 'Running in Web Browser'}
+                </div>
+              </div>
+            </div>
+
+            {canInstall && (
+              <div style={{ marginTop: '16px', marginBottom: '20px' }}>
+                <button
+                  type="button"
+                  className="pwa-modal-install-action"
+                  onClick={() => triggerInstall()}
+                >
+                  <i className="fa-solid fa-download"></i> Install GioChat on This Device
+                </button>
+              </div>
+            )}
+
+            <div className="pwa-device-tabs" style={{ marginTop: '16px' }}>
+              <button
+                type="button"
+                className={`pwa-tab-btn ${deviceTab === 'ios' ? 'active' : ''}`}
+                onClick={() => setDeviceTab('ios')}
+              >
+                <i className="fa-brands fa-apple"></i> iPhone / iPad
+              </button>
+              <button
+                type="button"
+                className={`pwa-tab-btn ${deviceTab === 'android' ? 'active' : ''}`}
+                onClick={() => setDeviceTab('android')}
+              >
+                <i className="fa-brands fa-android"></i> Android
+              </button>
+              <button
+                type="button"
+                className={`pwa-tab-btn ${deviceTab === 'desktop' ? 'active' : ''}`}
+                onClick={() => setDeviceTab('desktop')}
+              >
+                <i className="fa-solid fa-desktop"></i> Desktop / Mac
+              </button>
+            </div>
+
+            <div className="pwa-guide-steps" style={{ marginTop: '14px' }}>
+              {deviceTab === 'ios' && (
+                <>
+                  <div className="pwa-step-item">
+                    <span className="pwa-step-num">1</span>
+                    <div>
+                      Open <strong>Safari</strong> on your iPhone or iPad and go to GioChat.
+                    </div>
+                  </div>
+                  <div className="pwa-step-item">
+                    <span className="pwa-step-num">2</span>
+                    <div>
+                      Tap the <strong>Share</strong> button <i className="fa-solid fa-arrow-up-from-bracket pwa-share-icon"></i> at the bottom of the screen.
+                    </div>
+                  </div>
+                  <div className="pwa-step-item">
+                    <span className="pwa-step-num">3</span>
+                    <div>
+                      Scroll down and tap <strong>Add to Home Screen</strong> <i className="fa-regular fa-square-plus pwa-plus-icon"></i>.
+                    </div>
+                  </div>
+                  <div className="pwa-step-item">
+                    <span className="pwa-step-num">4</span>
+                    <div>
+                      Tap <strong>Add</strong> in the top-right corner to finish!
+                    </div>
+                  </div>
+                </>
+              )}
+
+              {deviceTab === 'android' && (
+                <>
+                  <div className="pwa-step-item">
+                    <span className="pwa-step-num">1</span>
+                    <div>
+                      Open <strong>Chrome</strong> or your browser on Android.
+                    </div>
+                  </div>
+                  <div className="pwa-step-item">
+                    <span className="pwa-step-num">2</span>
+                    <div>
+                      Tap the <strong>three dots (⋮)</strong> menu in the top right.
+                    </div>
+                  </div>
+                  <div className="pwa-step-item">
+                    <span className="pwa-step-num">3</span>
+                    <div>
+                      Select <strong>Install app</strong> or <strong>Add to Home screen</strong>.
+                    </div>
+                  </div>
+                  <div className="pwa-step-item">
+                    <span className="pwa-step-num">4</span>
+                    <div>
+                      Tap <strong>Install</strong> to add GioChat directly to your phone.
+                    </div>
+                  </div>
+                </>
+              )}
+
+              {deviceTab === 'desktop' && (
+                <>
+                  <div className="pwa-step-item">
+                    <span className="pwa-step-num">1</span>
+                    <div>
+                      In <strong>Chrome</strong>, <strong>Edge</strong>, or <strong>Brave</strong>, look at the right side of the address bar.
+                    </div>
+                  </div>
+                  <div className="pwa-step-item">
+                    <span className="pwa-step-num">2</span>
+                    <div>
+                      Click the <strong>Install</strong> icon <i className="fa-solid fa-download pwa-share-icon"></i> (or menu ⋮ &gt; <em>Install GioChat</em>).
+                    </div>
+                  </div>
+                  <div className="pwa-step-item">
+                    <span className="pwa-step-num">3</span>
+                    <div>
+                      Click <strong>Install</strong> to add GioChat to your Dock or Applications!
+                    </div>
+                  </div>
+                </>
+              )}
             </div>
           </div>
         )}

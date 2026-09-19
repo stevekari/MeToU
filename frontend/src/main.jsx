@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
 import App from './App.jsx';
 import './index.css';
+import { LanguageProvider } from './contexts/LanguageContext.jsx';
 import { ThemeProvider } from './contexts/ThemeContext.jsx';
 import { Provider } from 'react-redux';
 import { store } from './store/store.js';
@@ -27,14 +28,15 @@ if (typeof window !== 'undefined' && window.addEventListener) {
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
-    
     <Provider store={store}>
       <BrowserRouter>
-    <ThemeProvider>
-        <App />
-    </ThemeProvider>
-    </BrowserRouter>
+        <ThemeProvider>
+          <LanguageProvider>
+            <App />
+          </LanguageProvider>
+        </ThemeProvider>
+      </BrowserRouter>
     </Provider>
-    
   </React.StrictMode>
 );
+

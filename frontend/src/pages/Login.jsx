@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { login } from '../api/authApi';
 import { useLanguage } from '../contexts/LanguageContext';
+import GoogleSignInButton from '../components/GoogleSignInButton';
 
 export default function Login({ onLogin }) {
   const [username, setUsername] = useState('');
@@ -22,17 +23,30 @@ export default function Login({ onLogin }) {
     }
   };
 
+  const handleGoogleSuccess = (response) => {
+    onLogin(response);
+    navigate('/friends');
+  };
+
   return (
     <div className="auth-page">
       <form className="auth-card" onSubmit={handleSubmit}>
         <h1>{t('welcomeBack')}</h1>
+
+        <GoogleSignInButton
+          onSuccess={handleGoogleSuccess}
+          onError={(errMsg) => setError(errMsg)}
+        />
+
+        <div className="auth-divider">
+          <span>{t('or')}</span>
+        </div>
 
         <label htmlFor="language">{t('language')}</label>
         <select
           id="language"
           value={language}
           onChange={(e) => {
-            setLanguage(e.target.value);
             setLanguage(e.target.value);
           }}
         >
@@ -61,3 +75,4 @@ export default function Login({ onLogin }) {
     </div>
   );
 }
+

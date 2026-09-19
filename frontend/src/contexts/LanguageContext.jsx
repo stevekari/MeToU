@@ -29,7 +29,8 @@ const translations = {
     startVoiceCall: 'Start voice call', startVideoCall: 'Start video call', incomingVoiceCall: 'Incoming voice call', incomingVideoCall: 'Incoming video call', voiceCall: 'Voice call', videoCall: 'Video call', ringing: 'Ringing...', calling: 'Calling...', callMissed: 'Missed call', callCompleted: 'Call ended', accept: 'Accept', decline: 'Decline', endCall: 'End call', callError: 'Unable to access the microphone or camera.', acceptCallError: 'Unable to accept this call.', connectionError: 'The call connection failed.', mute: 'Mute microphone', unmute: 'Unmute microphone', turnCameraOff: 'Turn off camera', turnCameraOn: 'Turn on camera', switchCamera: 'Flip camera',
     chats: 'Chats', noChats: 'No chats yet', noChatsDesc: 'Search a username above to start chatting.',
     calls: 'Calls', noCalls: 'No calls yet', noCallsDesc: 'Your recent voice and video calls will appear here.', missed: 'Missed', received: 'Received', outgoing: 'Outgoing', allCalls: 'All', missedCalls: 'Missed', newCall: 'New Call',
-    installApp: 'Install GioChat', installAppDesc: 'Install on your home screen for fast access and fullscreen calling.', install: 'Install', iosInstallGuide: 'Tap the Share button and select "Add to Home Screen"'
+    installApp: 'Install GioChat', installAppDesc: 'Install on your home screen for fast access and fullscreen calling.', install: 'Install', iosInstallGuide: 'Tap the Share button and select "Add to Home Screen"',
+    continueWithGoogle: 'Continue with Google', or: 'OR'
   },
   es: {
     language: 'Idioma', english: 'Inglés', spanish: 'Español', french: 'Francés', portuguese: 'Portugués',
@@ -59,7 +60,8 @@ const translations = {
     startVoiceCall: 'Iniciar llamada de voz', startVideoCall: 'Iniciar videollamada', incomingVoiceCall: 'Llamada de voz entrante', incomingVideoCall: 'Videollamada entrante', voiceCall: 'Llamada de voz', videoCall: 'Videollamada', ringing: 'Sonando...', calling: 'Llamando...', callMissed: 'Llamada perdida', callCompleted: 'Llamada finalizada', accept: 'Aceptar', decline: 'Rechazar', endCall: 'Finalizar', callError: 'No se pudo acceder al micrófono o cámara.', acceptCallError: 'No se pudo aceptar esta llamada.', connectionError: 'Error en la conexión de la llamada.', mute: 'Silenciar micrófono', unmute: 'Activar micrófono', turnCameraOff: 'Apagar cámara', turnCameraOn: 'Encender cámara', switchCamera: 'Cambiar cámara',
     chats: 'Chats', noChats: 'Aún no hay chats', noChatsDesc: 'Busca un usuario arriba para comenzar a chatear.',
     calls: 'Llamadas', noCalls: 'Aún no hay llamadas', noCallsDesc: 'Tus llamadas de voz y video recientes aparecerán aquí.', missed: 'Perdida', received: 'Recibida', outgoing: 'Saliente', allCalls: 'Todas', missedCalls: 'Perdidas', newCall: 'Nueva llamada',
-    installApp: 'Instalar GioChat', installAppDesc: 'Instala en tu pantalla de inicio para acceso rápido y llamadas a pantalla completa.', install: 'Instalar', iosInstallGuide: 'Toca Compartir y luego "Añadir a pantalla de inicio"'
+    installApp: 'Instalar GioChat', installAppDesc: 'Instala en tu pantalla de inicio para acceso rápido y llamadas a pantalla completa.', install: 'Instalar', iosInstallGuide: 'Toca Compartir y luego "Añadir a pantalla de inicio"',
+    continueWithGoogle: 'Continuar con Google', or: 'O'
   },
   fr: {
     language: 'Langue', english: 'Anglais', spanish: 'Espagnol', french: 'Français', portuguese: 'Português',
@@ -89,7 +91,8 @@ const translations = {
     startVoiceCall: 'Démarrer appel vocal', startVideoCall: 'Démarrer appel vidéo', incomingVoiceCall: 'Appel vocal entrant', incomingVideoCall: 'Appel vidéo entrant', voiceCall: 'Appel vocal', videoCall: 'Appel vidéo', ringing: 'Sonnerie...', calling: 'Appel en cours...', callMissed: 'Appel manqué', callCompleted: 'Appel terminé', accept: 'Accepter', decline: 'Refuser', endCall: 'Raccrocher', callError: 'Impossible d’accéder au micro ou à la caméra.', acceptCallError: 'Impossible d’accepter cet appel.', connectionError: 'La connexion de l’appel a échoué.', mute: 'Couper micro', unmute: 'Activer micro', turnCameraOff: 'Couper caméra', turnCameraOn: 'Activer caméra', switchCamera: 'Changer de caméra',
     chats: 'Discussions', noChats: 'Aucune discussion', noChatsDesc: 'Recherchez un utilisateur ci-dessus pour commencer à discuter.',
     calls: 'Appels', noCalls: 'Aucun appel pour le moment', noCallsDesc: 'Vos appels vocaux et vidéo récents apparaîtront ici.', missed: 'Manqué', received: 'Reçu', outgoing: 'Sortant', allCalls: 'Tous', missedCalls: 'Manqués', newCall: 'Nouvel appel',
-    installApp: 'Installer GioChat', installAppDesc: 'Installez sur votre écran d’accueil pour un accès rapide et des appels plein écran.', install: 'Installer', iosInstallGuide: 'Appuyez sur Partager puis "Sur l’écran d’accueil"'
+    installApp: 'Installer GioChat', installAppDesc: 'Installez sur votre écran d’accueil pour un accès rapide et des appels plein écran.', install: 'Installer', iosInstallGuide: 'Appuyez sur Partager puis "Sur l’écran d’accueil"',
+    continueWithGoogle: 'Continuer avec Google', or: 'OU'
   },
   pt: {
     language: 'Idioma', english: 'Inglés', spanish: 'Espanhol', french: 'Francês', portuguese: 'Português',
@@ -119,7 +122,8 @@ const translations = {
     startVoiceCall: 'Iniciar chamada de voz', startVideoCall: 'Iniciar chamada de vídeo', incomingVoiceCall: 'Chamada de voz recebida', incomingVideoCall: 'Chamada de vídeo recebida', voiceCall: 'Chamada de voz', videoCall: 'Chamada de vídeo', ringing: 'Chamando...', calling: 'Ligando...', callMissed: 'Chamada perdida', callCompleted: 'Chamada encerrada', accept: 'Aceitar', decline: 'Recusar', endCall: 'Encerrar', callError: 'Não foi possível acessar o microfone ou a câmera.', acceptCallError: 'Não foi possível aceitar esta chamada.', connectionError: 'A conexão da chamada falhou.', mute: 'Mutar microfone', unmute: 'Desmutar microfone', turnCameraOff: 'Desligar câmera', turnCameraOn: 'Ligar câmera', switchCamera: 'Alternar câmera',
     chats: 'Conversas', noChats: 'Nenhuma conversa ainda', noChatsDesc: 'Pesquise um usuário acima para começar a conversar.',
     calls: 'Chamadas', noCalls: 'Nenhuma chamada ainda', noCallsDesc: 'Suas chamadas de voz e vídeo recentes aparecerão aqui.', missed: 'Perdida', received: 'Recebida', outgoing: 'Efetuada', allCalls: 'Todas', missedCalls: 'Perdidas', newCall: 'Nova chamada',
-    installApp: 'Instalar GioChat', installAppDesc: 'Instale na sua tela inicial para acesso rápido e chamadas em tela cheia.', install: 'Instalar', iosInstallGuide: 'Toque em Compartilhar e selecione "Adicionar à Tela de Início"'
+    installApp: 'Instalar GioChat', installAppDesc: 'Instale na sua tela inicial para acesso rápido e chamadas em tela cheia.', install: 'Instalar', iosInstallGuide: 'Toque em Compartilhar e selecione "Adicionar à Tela de Início"',
+    continueWithGoogle: 'Continuar com o Google', or: 'OU'
   }
 };
 
@@ -174,4 +178,25 @@ export function LanguageProvider({ children }) {
   return <LanguageContext.Provider value={value}>{children}</LanguageContext.Provider>;
 }
 
-export const useLanguage = () => useContext(LanguageContext);
+export const useLanguage = () => {
+  const ctx = useContext(LanguageContext);
+  if (!ctx) {
+    return {
+      language: 'en',
+      setLanguage: () => {},
+      t: (key, values = {}) => {
+        if (!key) return '';
+        const raw = translations.en?.[key] ?? key;
+        if (typeof raw !== 'string') return String(raw);
+        return raw.replace(/\{(\w+)\}/g, (_, name) => values[name] ?? '');
+      },
+      languageOptions: [
+        { value: 'en', label: 'English' },
+        { value: 'es', label: 'Español' },
+        { value: 'fr', label: 'Français' },
+        { value: 'pt', label: 'Português' }
+      ]
+    };
+  }
+  return ctx;
+};

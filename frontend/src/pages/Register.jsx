@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { register } from '../api/authApi';
 import { useLanguage } from '../contexts/LanguageContext';
+import GoogleSignInButton from '../components/GoogleSignInButton';
 
 export default function Register({ onLogin }) {
   const [username, setUsername] = useState('');
@@ -23,10 +24,24 @@ export default function Register({ onLogin }) {
     }
   };
 
+  const handleGoogleSuccess = (response) => {
+    onLogin(response);
+    navigate('/friends');
+  };
+
   return (
     <div className="auth-page">
       <form className="auth-card" onSubmit={handleSubmit}>
         <h1>{t('createAccount')}</h1>
+
+        <GoogleSignInButton
+          onSuccess={handleGoogleSuccess}
+          onError={(errMsg) => setError(errMsg)}
+        />
+
+        <div className="auth-divider">
+          <span>{t('or')}</span>
+        </div>
 
         <label>{t('username')}</label>
         <input value={username} onChange={(e) => setUsername(e.target.value)} required />
@@ -58,3 +73,4 @@ export default function Register({ onLogin }) {
     </div>
   );
 }
+

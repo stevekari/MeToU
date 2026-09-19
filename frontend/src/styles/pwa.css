@@ -151,10 +151,11 @@
   border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 20px;
   padding: 24px;
-  max-width: 360px;
+  max-width: 440px;
   width: 100%;
-  text-align: center;
+  text-align: left;
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+  box-sizing: border-box;
 }
 
 :root[data-theme="light"] .pwa-ios-modal {
@@ -163,64 +164,167 @@
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
 }
 
-.pwa-ios-modal-close {
-  position: absolute;
-  top: 14px;
-  right: 14px;
-  background: transparent;
-  border: none;
-  color: #94a3b8;
-  font-size: 1.1rem;
-  cursor: pointer;
-  padding: 6px;
+.pwa-modal-header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 16px;
+  padding-right: 24px;
 }
 
 .pwa-ios-modal-icon {
-  width: 60px;
-  height: 60px;
-  border-radius: 16px;
-  margin-bottom: 12px;
+  width: 52px;
+  height: 52px;
+  border-radius: 14px;
+  object-fit: cover;
+  flex-shrink: 0;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
 }
 
 .pwa-ios-modal-title {
   font-size: 1.15rem;
   font-weight: 700;
   color: #f8fafc;
-  margin-bottom: 16px;
+  margin: 0 0 4px;
 }
 
 :root[data-theme="light"] .pwa-ios-modal-title {
   color: #0f172a;
 }
 
-.pwa-ios-modal-instruction {
-  font-size: 0.9rem;
-  color: #cbd5e1;
-  text-align: left;
-  margin-bottom: 12px;
-  line-height: 1.45;
+.pwa-modal-subtitle {
+  font-size: 0.82rem;
+  color: #94a3b8;
+  margin: 0;
+  line-height: 1.35;
 }
 
-:root[data-theme="light"] .pwa-ios-modal-instruction {
+.pwa-device-tabs {
+  display: flex;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 10px;
+  padding: 4px;
+  gap: 4px;
+  margin-bottom: 16px;
+}
+
+:root[data-theme="light"] .pwa-device-tabs {
+  background: #f1f5f9;
+}
+
+.pwa-tab-btn {
+  flex: 1;
+  background: transparent;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 6px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #94a3b8;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: all 0.15s ease;
+}
+
+.pwa-tab-btn.active {
+  background: #4f46e5;
+  color: #ffffff;
+  box-shadow: 0 2px 8px rgba(79, 70, 229, 0.35);
+}
+
+:root[data-theme="light"] .pwa-tab-btn {
+  color: #64748b;
+}
+
+:root[data-theme="light"] .pwa-tab-btn.active {
+  background: #4f46e5;
+  color: #ffffff;
+}
+
+.pwa-guide-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.pwa-step-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  font-size: 0.88rem;
+  color: #cbd5e1;
+  line-height: 1.4;
+  background: rgba(255, 255, 255, 0.03);
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+:root[data-theme="light"] .pwa-step-item {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
   color: #334155;
 }
 
-.pwa-share-icon, .pwa-plus-icon {
-  color: #38bdf8;
-  margin: 0 4px;
-}
-
-.pwa-ios-modal-done-btn {
-  margin-top: 16px;
-  width: 100%;
+.pwa-step-num {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
   background: #4f46e5;
   color: #ffffff;
+  font-size: 0.75rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.pwa-modal-install-action {
+  width: 100%;
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: #ffffff;
   border: none;
-  border-radius: 10px;
-  padding: 10px 0;
+  border-radius: 12px;
+  padding: 11px 0;
   font-size: 0.95rem;
   font-weight: 600;
   cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 10px;
+  transition: transform 0.15s ease, filter 0.15s ease;
+}
+
+.pwa-modal-install-action:hover {
+  filter: brightness(1.1);
+  transform: translateY(-1px);
+}
+
+.pwa-ios-modal-done-btn {
+  width: 100%;
+  background: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 10px 0;
+  font-size: 0.92rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+:root[data-theme="light"] .pwa-ios-modal-done-btn {
+  background: #e2e8f0;
+  color: #1e293b;
+  border: none;
 }
 
 @keyframes slideUpFade {
@@ -274,4 +378,47 @@
     padding: 6px 12px;
     font-size: 0.8rem;
   }
+}
+
+/* Settings PWA Hero */
+.pwa-settings-hero {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  background: rgba(255, 255, 255, 0.04);
+  padding: 18px 20px;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  margin-bottom: 8px;
+}
+
+:root[data-theme="light"] .pwa-settings-hero {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+}
+
+.pwa-settings-icon {
+  width: 64px;
+  height: 64px;
+  border-radius: 16px;
+  object-fit: cover;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+}
+
+.pwa-status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #94a3b8;
+  margin-top: 6px;
+  background: rgba(255, 255, 255, 0.06);
+  padding: 4px 10px;
+  border-radius: 20px;
+}
+
+:root[data-theme="light"] .pwa-status-badge {
+  background: #e2e8f0;
+  color: #475569;
 }
