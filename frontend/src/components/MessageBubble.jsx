@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { parseMessageContent } from '../utils/messageContent';
 import { resolveBackendUrl } from '../utils/apiBaseUrl';
 import VoiceMessage from './VoiceMessage';
+import MediaLightbox from './MediaLightbox';
 import { useLanguage } from '../contexts/LanguageContext';
 
 function formatMessageTime(timestamp) {
@@ -188,29 +189,13 @@ export default function MessageBubble({
               loading="lazy"
             />
             {showFullImage && (
-              <div className="image-lightbox-overlay" onClick={() => setShowFullImage(false)}>
-                <div className="image-lightbox-content" onClick={(e) => e.stopPropagation()}>
-                  <img src={mediaSrc} alt={parsed.fileName || t('sharedPhoto')} className="image-lightbox-img" />
-                  <button
-                    type="button"
-                    className="image-lightbox-close"
-                    onClick={() => setShowFullImage(false)}
-                    aria-label="Close"
-                  >
-                    <i className="fa-solid fa-xmark"></i>
-                  </button>
-                  <a
-                    href={mediaSrc}
-                    target="_blank"
-                    rel="noreferrer"
-                    download={parsed.fileName || 'photo'}
-                    className="image-lightbox-download"
-                    title="Download"
-                  >
-                    <i className="fa-solid fa-download"></i>
-                  </a>
-                </div>
-              </div>
+              <MediaLightbox
+                src={mediaSrc}
+                fileName={parsed.fileName}
+                senderName={isMine ? 'You' : message.senderName || message.senderUsername || 'Friend'}
+                time={time}
+                onClose={() => setShowFullImage(false)}
+              />
             )}
           </>
         )}

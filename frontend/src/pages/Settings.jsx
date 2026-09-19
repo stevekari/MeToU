@@ -251,14 +251,16 @@ export default function Settings({ user, onProfileUpdate }) {
               </div>
             </div>
 
-            {canInstall && (
-              <div style={{ marginTop: '16px', marginBottom: '20px' }}>
+            {!isStandalone && (
+              <div style={{ marginTop: '16px', marginBottom: '16px' }}>
                 <button
                   type="button"
                   className="pwa-modal-install-action"
-                  onClick={() => triggerInstall()}
+                  onClick={async () => {
+                    await triggerInstall();
+                  }}
                 >
-                  <i className="fa-solid fa-download"></i> Install GioChat on This Device
+                  <i className="fa-solid fa-download"></i> Install GioChat to this Device
                 </button>
               </div>
             )}

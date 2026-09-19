@@ -699,107 +699,122 @@ export default function ChatInput({
             </button>
           </div>
         ) : (
-          /* 3. NORMAL CHAT INPUT BAR */
-          <>
-            {/* Attachment Button (+) with dropdown */}
-            <div className="attach-menu-wrapper" ref={attachMenuRef}>
-              <button
-                type="button"
-                className="chat-action attach-btn"
-                onClick={() => setShowAttachMenu((prev) => !prev)}
-                title="Attach image or document"
-                aria-label="Attach file"
-                disabled={isBusy}
-              >
-                <i className={`fa-solid ${showAttachMenu ? 'fa-xmark' : 'fa-plus'}`}></i>
-              </button>
+          /* 3. WHATSAPP STYLE CHAT INPUT BAR */
+          <div className="wa-input-row">
+            {/* Unified Input Pill Container */}
+            <div className="wa-input-pill">
+              {/* Emoji Trigger */}
+              <div className="emoji-picker-wrap">
+                <button
+                  type="button"
+                  className="wa-pill-btn wa-emoji-btn"
+                  onClick={() => setShowEmojiPicker((visible) => !visible)}
+                  aria-label="Add emoji"
+                  title="Add emoji"
+                  disabled={isBusy}
+                >
+                  <span aria-hidden="true">😊</span>
+                </button>
+                {showEmojiPicker && (
+                  <div className="emoji-picker" role="group" aria-label="Emoji picker">
+                    {['😊', '😂', '😍', '❤️', '👍', '👏', '🎉', '🔥', '😢', '😡', '🙏', '✨'].map((emoji) => (
+                      <button
+                        key={emoji}
+                        type="button"
+                        className="emoji-option"
+                        onClick={() => addEmoji(emoji)}
+                        aria-label={`Add ${emoji}`}
+                      >
+                        {emoji}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
 
-              {showAttachMenu && (
-                <div className="attach-dropdown-menu">
-                  <button
-                    type="button"
-                    className="attach-menu-item"
-                    onClick={() => fileInputRef.current?.click()}
-                  >
-                    <i className="fa-solid fa-image attach-icon-photo"></i>
-                    <span>Photo / Image</span>
-                  </button>
-                  <button
-                    type="button"
-                    className="attach-menu-item"
-                    onClick={() => docInputRef.current?.click()}
-                  >
-                    <i className="fa-solid fa-file-lines attach-icon-doc"></i>
-                    <span>Document / PDF</span>
-                  </button>
-                </div>
-              )}
-            </div>
-
-            <div className="emoji-picker-wrap">
-              <button
-                type="button"
-                className="chat-action"
-                onClick={() => setShowEmojiPicker((visible) => !visible)}
-                aria-label="Add emoji"
-                title="Add emoji"
+              {/* Main Text Input (Takes full remaining space, never overflows) */}
+              <input
+                ref={inputRef}
+                type="text"
+                className="wa-input-field"
+                value={text}
+                placeholder={
+                  editingMessage
+                    ? 'Update message...'
+                    : (imageDraft || documentDraft)
+                    ? 'Add a caption...'
+                    : t('typeMessage')
+                }
+                onChange={handleTextChange}
+                onBlur={stopTypingNow}
                 disabled={isBusy}
-              >
-                <span aria-hidden="true">😊</span>
-              </button>
-              {showEmojiPicker && (
-                <div className="emoji-picker" role="group" aria-label="Emoji picker">
-                  {['😊', '😂', '😍', '❤️', '👍', '👏', '🎉', '🔥', '😢', '😡', '🙏', '✨'].map((emoji) => (
+              />
+
+              {/* Attachment Button (+) inside Pill */}
+              <div className="attach-menu-wrapper" ref={attachMenuRef}>
+                <button
+                  type="button"
+                  className="wa-pill-btn wa-attach-btn"
+                  onClick={() => setShowAttachMenu((prev) => !prev)}
+                  title="Attach photo or document"
+                  aria-label="Attach file"
+                  disabled={isBusy}
+                >
+                  <i className={`fa-solid ${showAttachMenu ? 'fa-xmark' : 'fa-paperclip'}`}></i>
+                </button>
+
+                {showAttachMenu && (
+                  <div className="attach-dropdown-menu">
                     <button
-                      key={emoji}
                       type="button"
-                      className="emoji-option"
-                      onClick={() => addEmoji(emoji)}
-                      aria-label={`Add ${emoji}`}
+                      className="attach-menu-item"
+                      onClick={() => fileInputRef.current?.click()}
                     >
-                      {emoji}
+                      <i className="fa-solid fa-image attach-icon-photo"></i>
+                      <span>Photo / Image</span>
                     </button>
-                  ))}
-                </div>
-              )}
+                    <button
+                      type="button"
+                      className="attach-menu-item"
+                      onClick={() => docInputRef.current?.click()}
+                    >
+                      <i className="fa-solid fa-file-lines attach-icon-doc"></i>
+                      <span>Document / PDF</span>
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
 
-            <button
-              type="button"
-              className="chat-action voice-action"
-              onClick={startRecording}
-              title={t('recordVoice')}
-              aria-label={t('recordVoice')}
-              disabled={isBusy}
-            >
-              <i className="fa-solid fa-microphone"></i>
-            </button>
-
-            <input
-              ref={inputRef}
-              type="text"
-              value={text}
-              placeholder={editingMessage ? 'Update message...' : (imageDraft || documentDraft) ? 'Add a caption...' : t('typeMessage')}
-              onChange={handleTextChange}
-              onBlur={stopTypingNow}
-              disabled={isBusy}
-            />
-
-            <button
-              type="submit"
-              className={`chat-submit ${isSendingAnim ? 'sending-active' : ''}`}
-              disabled={isBusy || (!text.trim() && !imageDraft && !documentDraft)}
-              aria-label="Send message"
-            >
-              {isBusy ? (
-                <i className="fa-solid fa-spinner fa-spin"></i>
-              ) : editingMessage ? (
-                <i className="fa-solid fa-check"></i>
-              ) : (
-                <i className="fa-solid fa-paper-plane"></i>
-              )}
-            </button>
-          </>
+            {/* Right Action Circle Button: Send (if typing/draft/edit) OR Voice Mic (if empty) */}
+            {Boolean(text.trim() || imageDraft || documentDraft || editingMessage) ? (
+              <button
+                type="submit"
+                className={`wa-action-circle wa-send-btn ${isSendingAnim ? 'sending-active' : ''}`}
+                disabled={isBusy || (!text.trim() && !imageDraft && !documentDraft)}
+                aria-label="Send message"
+              >
+                {isBusy ? (
+                  <i className="fa-solid fa-spinner fa-spin"></i>
+                ) : editingMessage ? (
+                  <i className="fa-solid fa-check"></i>
+                ) : (
+                  <i className="fa-solid fa-paper-plane"></i>
+                )}
+              </button>
+            ) : (
+              <button
+                type="button"
+                className="wa-action-circle wa-voice-btn"
+                onClick={startRecording}
+                title={t('recordVoice')}
+                aria-label={t('recordVoice')}
+                disabled={isBusy}
+              >
+                <i className="fa-solid fa-microphone"></i>
+              </button>
+            )}
+          </div>
         )}
 
         {/* Image Preview Draft */}

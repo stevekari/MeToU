@@ -6,10 +6,9 @@ import '../styles/pwa.css';
 
 export default function PWAInstallBanner() {
   const { t } = useLanguage();
-  const { isStandalone, canInstall, isIOS, isAndroid, triggerInstall } = usePWA();
+  const { isStandalone, isIOS, triggerInstall } = usePWA();
   const [isVisible, setIsVisible] = useState(false);
-  const [showGuideModal, setShowGuideModal] = useState(false);
-  const [activeGuideTab, setActiveGuideTab] = useState('ios');
+  const [toastMessage, setToastMessage] = useState('');
 
   useEffect(() => {
     if (isStandalone) {
@@ -19,7 +18,6 @@ export default function PWAInstallBanner() {
 
     const isDismissed = sessionStorage.getItem('pwa_install_dismissed') === 'true';
     if (!isDismissed) {
-      // Auto-show banner after 1.5 seconds if not dismissed
       const timer = setTimeout(() => {
         setIsVisible(true);
       }, 1500);
@@ -27,31 +25,35 @@ export default function PWAInstallBanner() {
     }
   }, [isStandalone]);
 
-  useEffect(() => {
-    if (isIOS) setActiveGuideTab('ios');
-    else if (isAndroid) setActiveGuideTab('android');
-    else setActiveGuideTab('desktop');
-  }, [isIOS, isAndroid]);
-
   const handleInstallClick = async () => {
-    if (canInstall) {
+    try {
       const outcome = await triggerInstall();
       if (outcome === 'accepted') {
         setIsVisible(false);
         return;
       }
+    } catch (err) {
+      console.warn('[PWA] triggerInstall error:', err);
     }
-    // Open the device-specific installation guide
-    setShowGuideModal(true);
+
+    // If on iOS or browser requires manual tap from browser menu
+    if (isIOS) {
+      setToastMessage('Tap Safari’s Share button (⬆️) ➔ "Add to Home Screen"');
+    } else {
+      setToastMessage('Tap the browser menu (⋮) ➔ "Install app" / "Add to Home screen"');
+    }
+
+    setTimeout(() => {
+      setToastMessage('');
+    }, 4000);
   };
 
   const handleDismiss = () => {
     setIsVisible(false);
-    setShowGuideModal(false);
     sessionStorage.setItem('pwa_install_dismissed', 'true');
   };
 
-  if (isStandalone || (!isVisible && !showGuideModal)) return null;
+  if (isStandalone || (!isVisible && !toastMessage)) return null;
 
   return (
     <>
@@ -85,159 +87,13 @@ export default function PWAInstallBanner() {
         </div>
       )}
 
-      {showGuideModal && (
-        <div className="pwa-ios-modal-backdrop" onClick={() => setShowGuideModal(false)}>
-          <div className="pwa-ios-modal" onClick={(e) => e.stopPropagation()}>
-            <button
-              type="button"
-              className="pwa-ios-modal-close"
-              onClick={() => setShowGuideModal(false)}
-              aria-label="Close"
-            >
-              <i className="fa-solid fa-xmark"></i>
-            </button>
-
-            <div className="pwa-modal-header">
-              <img src={gcLogo} alt="GioChat" className="pwa-ios-modal-icon" />
-              <div>
-                <h3 className="pwa-ios-modal-title">Install GioChat</h3>
-                <p className="pwa-modal-subtitle">Add to your home screen or desktop for full-screen calling & fast access.</p>
-              </div>
-            </div>
-
-            <div className="pwa-device-tabs">
-              <button
-                type="button"
-                className={`pwa-tab-btn ${activeGuideTab === 'ios' ? 'active' : ''}`}
-                onClick={() => setActiveGuideTab('ios')}
-              >
-                <i className="fa-brands fa-apple"></i> iPhone / iPad
-              </button>
-              <button
-                type="button"
-                className={`pwa-tab-btn ${activeGuideTab === 'android' ? 'active' : ''}`}
-                onClick={() => setActiveGuideTab('android')}
-              >
-                <i className="fa-brands fa-android"></i> Android
-              </button>
-              <button
-                type="button"
-                className={`pwa-tab-btn ${activeGuideTab === 'desktop' ? 'active' : ''}`}
-                onClick={() => setActiveGuideTab('desktop')}
-              >
-                <i className="fa-solid fa-desktop"></i> Desktop / Mac
-              </button>
-            </div>
-
-            <div className="pwa-guide-steps">
-              {activeGuideTab === 'ios' && (
-                <>
-                  <div className="pwa-step-item">
-                    <span className="pwa-step-num">1</span>
-                    <div>
-                      Tap the <strong>Share</strong> button <i className="fa-solid fa-arrow-up-from-bracket pwa-share-icon"></i> in Safari’s bottom toolbar.
-                    </div>
-                  </div>
-                  <div className="pwa-step-item">
-                    <span className="pwa-step-num">2</span>
-                    <div>
-                      Scroll down and tap <strong>Add to Home Screen</strong> <i className="fa-regular fa-square-plus pwa-plus-icon"></i>.
-                    </div>
-                  </div>
-                  <div className="pwa-step-item">
-                    <span className="pwa-step-num">3</span>
-                    <div>
-                      Tap <strong>Add</strong> in the top-right corner.
-                    </div>
-                  </div>
-                </>
-              )}
-
-              {activeGuideTab === 'android' && (
-                <>
-                  <div className="pwa-step-item">
-                    <span className="pwa-step-num">1</span>
-                    <div>
-                      Tap the <strong>three dots menu (⋮)</strong> at the top right of Chrome or your browser.
-                    </div>
-                  </div>
-                  <div className="pwa-step-item">
-                    <span className="pwa-step-num">2</span>
-                    <div>
-                      Select <strong>Install app</strong> or <strong>Add to Home screen</strong>.
-                    </div>
-                  </div>
-                  <div className="pwa-step-item">
-                    <span className="pwa-step-num">3</span>
-                    <div>
-                      Confirm <strong>Install</strong> to add GioChat to your home screen!
-                    </div>
-                  </div>
-                </>
-              )}
-
-              {activeGuideTab === 'desktop' && (
-                <>
-                  <div className="pwa-step-item">
-                    <span className="pwa-step-num">1</span>
-                    <div>
-                      Click the <strong>Install icon</strong> <i className="fa-solid fa-download pwa-share-icon"></i> on the right side of the browser URL address bar.
-                    </div>
-                  </div>
-                  <div className="pwa-step-item">
-                    <span className="pwa-step-num">2</span>
-                    <div>
-                      Or open the browser menu (⋮) and choose <strong>Install GioChat</strong>.
-                    </div>
-                  </div>
-                  <div className="pwa-step-item">
-                    <span className="pwa-step-num">3</span>
-                    <div>
-                      Click <strong>Install</strong> to launch as a standalone desktop app.
-                    </div>
-                  </div>
-                </>
-              )}
-            </div>
-
-            {canInstall ? (
-              <button
-                type="button"
-                className="pwa-modal-install-action"
-                onClick={async () => {
-                  const outcome = await triggerInstall();
-                  if (outcome === 'accepted') {
-                    setShowGuideModal(false);
-                    setIsVisible(false);
-                  }
-                }}
-              >
-                <i className="fa-solid fa-download"></i> Install GioChat Now
-              </button>
-            ) : (
-              <div className="pwa-browser-notice">
-                <i className="fa-solid fa-circle-info"></i>
-                <span>
-                  {activeGuideTab === 'android'
-                    ? 'PWAs install directly through Chrome. Follow the 3 steps above to add GioChat to your home screen!'
-                    : activeGuideTab === 'ios'
-                    ? 'On iPhone/iPad, use Safari’s Share button (⬆️) and select "Add to Home Screen".'
-                    : 'Use your browser menu to install GioChat directly to your desktop.'}
-                </span>
-              </div>
-            )}
-
-            <button
-              type="button"
-              className="pwa-ios-modal-done-btn"
-              onClick={() => setShowGuideModal(false)}
-            >
-              Close Guide
-            </button>
-          </div>
+      {/* Lightweight, non-intrusive floating toast if browser requires menu action */}
+      {toastMessage && (
+        <div className="pwa-quick-toast" role="status">
+          <i className="fa-solid fa-circle-info"></i>
+          <span>{toastMessage}</span>
         </div>
       )}
     </>
   );
 }
-
