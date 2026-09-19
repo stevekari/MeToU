@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
-import gioLogo from '../assets/gio.png';
+import gcLogo from '../assets/gc.png';
 import '../styles/pwa.css';
 
 export default function PWAInstallBanner() {
@@ -86,7 +86,7 @@ export default function PWAInstallBanner() {
     <>
       <div className="pwa-install-banner" role="region" aria-label={t('installApp')}>
         <div className="pwa-banner-content">
-          <img src={gioLogo} alt="GioChat" className="pwa-banner-icon" />
+          <img src={gcLogo} alt="GioChat" className="pwa-banner-icon" />
           <div className="pwa-banner-text">
             <span className="pwa-banner-title">{t('installApp')}</span>
             <span className="pwa-banner-desc">{t('installAppDesc')}</span>
@@ -122,7 +122,7 @@ export default function PWAInstallBanner() {
             >
               <i className="fa-solid fa-xmark"></i>
             </button>
-            <img src={gioLogo} alt="GioChat" className="pwa-ios-modal-icon" />
+            <img src={gcLogo} alt="GioChat" className="pwa-ios-modal-icon" />
             <h3 className="pwa-ios-modal-title">{t('installApp')}</h3>
             <p className="pwa-ios-modal-instruction">
               1. Tap the <strong>Share</strong> button <i className="fa-solid fa-arrow-up-from-bracket pwa-share-icon"></i> in Safari’s bottom toolbar.

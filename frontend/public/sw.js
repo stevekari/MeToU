@@ -1,14 +1,14 @@
-const CACHE_NAME = 'giochat-pwa-v1';
+const CACHE_NAME = 'giochat-pwa-v2';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
+  '/gc.png',
   '/manifest.webmanifest',
   '/manifest.json',
   '/icons/icon-192x192.png',
   '/icons/icon-512x512.png',
   '/icons/apple-touch-icon.png',
-  '/icons/maskable-icon.png',
-  '/favicon.svg'
+  '/icons/maskable-icon.png'
 ];
 
 // Install event - Pre-cache core shell
