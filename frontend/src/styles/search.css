@@ -68,7 +68,29 @@
     padding: 8px;
     max-height: 320px;
     overflow-y: auto;
+    overflow-x: hidden;
+    scroll-behavior: smooth;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(148, 163, 184, 0.25) transparent;
     animation: popupIn 0.18s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.search-popup::-webkit-scrollbar {
+    width: 5px;
+}
+
+.search-popup::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.search-popup::-webkit-scrollbar-thumb {
+    background: rgba(148, 163, 184, 0.25);
+    border-radius: 10px;
+}
+
+.search-popup::-webkit-scrollbar-thumb:hover {
+    background: rgba(148, 163, 184, 0.45);
 }
 
 .search-popup-item {
