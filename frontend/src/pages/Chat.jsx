@@ -90,6 +90,12 @@ export default function Chat({ currentUserId }) {
     if (message.type === 'CONVERSATION_DECLINED' || message.status === 'DECLINED') {
       setConversationStatus('DECLINED');
     }
+    if (message.type === 'CONVERSATION_PENDING' || message.status === 'PENDING') {
+      setConversationStatus('PENDING');
+      if (message.initiatorId != null) {
+        setConversationInitiatorId(message.initiatorId);
+      }
+    }
 
     setMessages((prev) => {
       const list = Array.isArray(prev) ? prev : [];
@@ -403,11 +409,20 @@ export default function Chat({ currentUserId }) {
 
   const friendDisplayName = friend?.displayName || friend?.username || 'User';
 
+  const effectiveCurrentUserId = currentUserId || (() => {
+    try {
+      const u = JSON.parse(localStorage.getItem('user'));
+      return u?.userId || u?.id;
+    } catch {
+      return null;
+    }
+  })();
+
   const isPending = conversationStatus === 'PENDING';
   const isDeclined = conversationStatus === 'DECLINED';
   const isAccepted = conversationStatus === 'ACCEPTED' || (!isPending && !isDeclined);
-  const isInitiator = conversationInitiatorId != null && String(conversationInitiatorId) === String(currentUserId);
-  const isRecipient = isPending && !isInitiator;
+  const isInitiator = conversationInitiatorId != null && effectiveCurrentUserId != null && String(conversationInitiatorId) === String(effectiveCurrentUserId);
+  const isRecipient = isPending && (!isInitiator || (conversationInitiatorId != null && String(conversationInitiatorId) !== String(effectiveCurrentUserId)));
 
   return (
     <div className="chat-layout-page">

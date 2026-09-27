@@ -2619,10 +2619,21 @@
     gap: 5px;
 }
 
-.pending-received .hero-status-tag { color: #818cf8; }
-.pending-sent .hero-status-tag { color: #facc15; }
-.declined .hero-status-tag { color: #f87171; }
-.accepted .hero-status-tag { color: #4ade80; }
+.pending-received .hero-status-tag {
+    color: #818cf8;
+}
+
+.pending-sent .hero-status-tag {
+    color: #facc15;
+}
+
+.declined .hero-status-tag {
+    color: #f87171;
+}
+
+.accepted .hero-status-tag {
+    color: #4ade80;
+}
 
 .person-hero-status p {
     margin: 0;

@@ -79,10 +79,15 @@ public class ConversationController {
         Long b = Math.max(me.getId(), friendId);
 
         if (conversation == null) {
-            conversation = conversationRepository.findByUserAIdAndUserBId(a, b).orElse(null);
-        }
-        if (conversation == null) {
             conversation = conversationRepository.save(new Conversation(a, b, me.getId(), "PENDING"));
+
+            Map<String, Object> event = new HashMap<>();
+            event.put("type", "CONVERSATION_PENDING");
+            event.put("conversationId", conversation.getId());
+            event.put("status", "PENDING");
+            event.put("initiatorId", me.getId());
+            event.put("fromUser", new UserDto(me));
+            messagingTemplate.convertAndSend("/topic/conversation." + conversation.getId(), event);
         } else if ("DECLINED".equalsIgnoreCase(conversation.getStatus())) {
             conversation.setStatus("PENDING");
             conversation.setInitiatorId(me.getId());

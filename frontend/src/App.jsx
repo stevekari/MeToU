@@ -72,8 +72,8 @@ export default function App() {
             <Route path="/login" element={isAuthenticated? <Navigate to="/friends" replace /> : <Login onLogin={loginUser} />} />
             <Route path="/register" element={isAuthenticated? <Navigate to="/friends" replace /> : <Register onLogin={loginUser} />} />
             <Route path="/friends" element={<RequireAuth isAuthenticated={isAuthenticated}><FriendsList /></RequireAuth>} />
-            <Route path="/calls" element={<RequireAuth isAuthenticated={isAuthenticated}><Calls currentUserId={user?.userId} /></RequireAuth>} />
-            <Route path="/chat/:conversationId" element={<RequireAuth isAuthenticated={isAuthenticated}><Chat currentUserId={user?.userId} /></RequireAuth>} />
+            <Route path="/calls" element={<RequireAuth isAuthenticated={isAuthenticated}><Calls currentUserId={user?.userId || user?.id} /></RequireAuth>} />
+            <Route path="/chat/:conversationId" element={<RequireAuth isAuthenticated={isAuthenticated}><Chat currentUserId={user?.userId || user?.id} /></RequireAuth>} />
             <Route path="/settings" element={<RequireAuth isAuthenticated={isAuthenticated}><Settings user={user} onProfileUpdate={updateStoredUser} /></RequireAuth>} />
             <Route path="*" element={<Navigate to={isAuthenticated? '/friends' : '/login'} replace />} />
           </Routes>
