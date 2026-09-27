@@ -5,7 +5,16 @@ import { formatTimeAgo } from '../utils/timeAgo';
 import { useLanguage } from '../contexts/LanguageContext';
 import { markAsRead } from '../store/slices/chatSlice';
 
-function formatPreview(raw, t) {
+function formatPreview(raw, t, status, initiatorId, currentUserId) {
+  if (status === 'PENDING') {
+    if (initiatorId != null && currentUserId != null && String(initiatorId) === String(currentUserId)) {
+      return '⏳ Friend request pending';
+    }
+    return '👋 Sent you a friend request';
+  }
+  if (status === 'DECLINED') {
+    return '❌ Request declined';
+  }
   if (!raw) return t('startConversation');
   try {
     const parsed = typeof raw === 'string' ? JSON.parse(raw) : raw;
@@ -19,6 +28,7 @@ function formatPreview(raw, t) {
     return raw;
   } catch {
   }
+  return raw;
 }
 
 export default function FriendCard({
@@ -27,6 +37,9 @@ export default function FriendCard({
   lastMessageAt,
   unreadCount = 0,
   conversationId,
+  status,
+  initiatorId,
+  currentUserId,
   onClick,
   onAvatarClick,
   active = false
@@ -63,6 +76,9 @@ export default function FriendCard({
 
   const lastSeenTimestamp = presenceObj.lastSeen || lastSeenMap[String(friendId)] || friend?.lastSeen;
   const lastSeenRelative = !isOnline && lastSeenTimestamp ? formatTimeAgo(lastSeenTimestamp) : null;
+
+  const effectiveStatus = storedConversation?.status || status;
+  const effectiveInitiatorId = storedConversation?.initiatorId ?? initiatorId;
 
   const handleClick = (e) => {
     if (conversationId) {
@@ -106,8 +122,8 @@ export default function FriendCard({
               <span className="typing-text">
                 <span className="typing-dots"><span>.</span><span>.</span><span>.</span></span> {t('typing')}
               </span>
-            ) : visibleLastMessage ? (
-              formatPreview(visibleLastMessage, t)
+            ) : (visibleLastMessage || effectiveStatus === 'PENDING' || effectiveStatus === 'DECLINED') ? (
+              formatPreview(visibleLastMessage, t, effectiveStatus, effectiveInitiatorId, currentUserId)
             ) : (
               <span className={`friend-status-pill ${statusType}`}>
                 {statusLabel}

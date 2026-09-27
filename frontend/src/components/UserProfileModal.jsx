@@ -218,6 +218,20 @@ export default function UserProfileModal({ user, userId, onClose, onStartCall })
                 <i className="fa-regular fa-clock"></i>
                 <span>Request Sent (Pending)</span>
               </button>
+              {relationship.conversationId && (
+                <button
+                  type="button"
+                  className="profile-action-btn secondary"
+                  onClick={() => {
+                    onClose();
+                    navigate(`/chat/${relationship.conversationId}`, { state: { friend: profile } });
+                  }}
+                  style={{ width: '100%' }}
+                >
+                  <i className="fa-solid fa-comments"></i>
+                  <span>Open Chat</span>
+                </button>
+              )}
               <span style={{ fontSize: '0.78rem', color: '#94a3b8' }}>Waiting for user to accept your friend request</span>
             </div>
           )}

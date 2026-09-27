@@ -9,8 +9,11 @@ import { useLanguage } from '../contexts/LanguageContext';
 import { useDispatch, useSelector } from 'react-redux';
 import { setConversations as setConversationState } from '../store/slices/chatSlice';
 import { setUserStatuses } from '../store/slices/presenceSlice';
+import { useAuth } from '../hooks/useAuth';
 
 export default function FriendsList() {
+  const { user } = useAuth();
+  const currentUserId = user?.userId || user?.id;
   const [conversations, setConversations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -181,6 +184,9 @@ export default function FriendsList() {
               conversationId={conv.conversationId}
               lastMessage={getMessagePreview(liveConversations[conv.conversationId]?.lastMessage ?? conv.lastMessage)}
               lastMessageAt={liveConversations[conv.conversationId]?.lastMessageAt ?? conv.lastMessageTime}
+              status={conv.status}
+              initiatorId={conv.initiatorId}
+              currentUserId={currentUserId}
               onAvatarClick={(friend) => setSelectedProfileUser(friend)}
               onClick={() =>
                 navigate(`/chat/${conv.conversationId}`, {

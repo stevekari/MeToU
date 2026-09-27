@@ -266,8 +266,8 @@ export default function Chat({ currentUserId }) {
           if (currentConversation.initiatorId != null) {
             setConversationInitiatorId(currentConversation.initiatorId);
           }
-          if (!selectedFriend && currentConversation.otherUser) {
-            setFriend(currentConversation.otherUser);
+          if (currentConversation.otherUser) {
+            setFriend((prev) => ({ ...(prev || {}), ...currentConversation.otherUser }));
           }
         }
       })
@@ -281,8 +281,8 @@ export default function Chat({ currentUserId }) {
         if (conv) {
           if (conv.status) setConversationStatus(conv.status);
           if (conv.initiatorId != null) setConversationInitiatorId(conv.initiatorId);
-          if (conv.otherUser && !selectedFriend) {
-            setFriend(conv.otherUser);
+          if (conv.otherUser) {
+            setFriend((prev) => ({ ...(prev || {}), ...conv.otherUser }));
           }
         }
       })
@@ -478,6 +478,9 @@ export default function Chat({ currentUserId }) {
                 conversationId={conv.conversationId}
                 lastMessage={getMessagePreview(conv.lastMessage)}
                 lastMessageAt={conv.lastMessageAt ?? conv.lastMessageTime}
+                status={conv.status}
+                initiatorId={conv.initiatorId}
+                currentUserId={currentUserId}
                 onAvatarClick={(f) => setSelectedProfileUser(f)}
                 onClick={() => navigate(`/chat/${conv.conversationId}`, { state: { friend: conv.otherUser } })}
                 active={friend?.id === conv.otherUser?.id}
@@ -567,7 +570,111 @@ export default function Chat({ currentUserId }) {
         <div className="chat-messages">
           {loading && <div className="page-loading">{t('loadingConversation')}</div>}
           {!loading && safeMessages.length === 0 && friend && (
-            <div className="empty-state">{t('sayHi', { username: friendDisplayName })}</div>
+            <div className="chat-person-hero-card">
+              <div
+                className="person-hero-avatar-wrap clickable"
+                onClick={() => setSelectedProfileUser(friend)}
+                title="View full profile"
+              >
+                <img
+                  src={resolveAvatarUrl(friend.avatarUrl, friendDisplayName)}
+                  alt={friendDisplayName}
+                  className="person-hero-avatar"
+                />
+                <span className={`online-dot ${friendStatusType}`} />
+              </div>
+
+              <h3 className="person-hero-name" onClick={() => setSelectedProfileUser(friend)}>
+                {friendDisplayName}
+              </h3>
+              {friend.username && (
+                <span className="person-hero-handle">@{friend.username}</span>
+              )}
+
+              {friend.bio && (
+                <p className="person-hero-bio">"{friend.bio}"</p>
+              )}
+
+              {isPending && isRecipient && (
+                <div className="person-hero-status pending-received">
+                  <div className="hero-status-tag">
+                    <i className="fa-solid fa-user-plus"></i> Friend Request
+                  </div>
+                  <p>{friendDisplayName} sent you a friend request.</p>
+                  <div className="hero-status-actions">
+                    <button
+                      type="button"
+                      className="btn-req-accept"
+                      onClick={handleAcceptRequest}
+                      disabled={requestActionLoading}
+                    >
+                      <i className="fa-solid fa-check"></i> Accept
+                    </button>
+                    <button
+                      type="button"
+                      className="btn-req-decline"
+                      onClick={handleDeclineRequest}
+                      disabled={requestActionLoading}
+                    >
+                      <i className="fa-solid fa-xmark"></i> Decline
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {isPending && isInitiator && (
+                <div className="person-hero-status pending-sent">
+                  <div className="hero-status-tag">
+                    <i className="fa-regular fa-clock"></i> Request Pending
+                  </div>
+                  <p>Waiting for {friendDisplayName} to accept your friend request.</p>
+                </div>
+              )}
+
+              {isDeclined && (
+                <div className="person-hero-status declined">
+                  <div className="hero-status-tag">
+                    <i className="fa-solid fa-ban"></i> Request Declined
+                  </div>
+                  <p>Previous chat request was declined.</p>
+                  <button
+                    type="button"
+                    className="btn-req-resend"
+                    onClick={handleResendRequest}
+                    disabled={requestActionLoading}
+                    style={{
+                      background: 'linear-gradient(135deg, #4f46e5, #6366f1)',
+                      color: '#fff',
+                      border: 'none',
+                      borderRadius: '8px',
+                      padding: '8px 14px',
+                      fontWeight: '600',
+                      fontSize: '0.85rem',
+                      cursor: 'pointer',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      marginTop: '6px'
+                    }}
+                  >
+                    <i className="fa-solid fa-rotate-right"></i> Send Request Again
+                  </button>
+                </div>
+              )}
+
+              {isAccepted && (
+                <div className="person-hero-status accepted">
+                  <p className="hero-greeting">{t('sayHi', { username: friendDisplayName })}</p>
+                  <button
+                    type="button"
+                    className="btn-view-profile"
+                    onClick={() => setSelectedProfileUser(friend)}
+                  >
+                    <i className="fa-regular fa-user"></i> View Profile
+                  </button>
+                </div>
+              )}
+            </div>
           )}
           {safeMessages.map((m) => (
             <MessageBubble
