@@ -3,6 +3,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import chatImg from '../assets/chat.jpeg';
 import { useTheme } from '../contexts/ThemeContext';
 import { useLanguage } from '../contexts/LanguageContext';
+import { usePWAInstall } from '../hooks/usePWAInstall';
 import { setMyStatus } from '../store/slices/presenceSlice';
 
 export default function Navbar({ user, onLogout }) {
@@ -10,6 +11,7 @@ export default function Navbar({ user, onLogout }) {
   const dispatch = useDispatch();
   const { theme, toggleTheme } = useTheme();
   const { language, setLanguage, languageOptions, t } = useLanguage();
+  const { isStandalone, installApp } = usePWAInstall();
   const myStatus = useSelector((state) => state.presence?.myStatus || 'online');
 
   const handleLogout = () => {
@@ -65,6 +67,24 @@ export default function Navbar({ user, onLogout }) {
           </div>
 
           <span className="navbar-username nav-desktop-only">{user.username}</span>
+
+          {!isStandalone && (
+            <button
+              onClick={() => {
+                installApp().then((res) => {
+                  if (!res?.success) {
+                    window.dispatchEvent(new CustomEvent('open-pwa-install-modal'));
+                  }
+                });
+              }}
+              className="navbar-install-btn"
+              title="Install GioChat App"
+              aria-label="Install GioChat App"
+            >
+              <i className="fa-solid fa-mobile-screen-button"></i>
+              <span className="nav-install-text">Install App</span>
+            </button>
+          )}
 
           <button onClick={handleLogout} className="navbar-logout-btn" title={t('logout')} aria-label={t('logout')}>
             <i className="fa-solid fa-arrow-right-from-bracket"></i>

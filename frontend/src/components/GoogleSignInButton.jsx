@@ -19,7 +19,10 @@ export default function GoogleSignInButton({ onSuccess, onError }) {
       onSuccess?.(response);
     } catch (err) {
       console.error('Google Sign-In failed', err);
-      const msg = err.response?.data || err.message || t('loginFailed');
+      let msg = err.response?.data || err.message || t('loginFailed');
+      if (err.message === 'Network Error' || err.code === 'ERR_NETWORK') {
+        msg = 'Connection to server failed. If the server is starting up, please wait a moment and try again.';
+      }
       onError?.(msg);
     } finally {
       setLoading(false);

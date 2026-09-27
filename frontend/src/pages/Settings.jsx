@@ -6,12 +6,14 @@ import { uploadMedia } from '../api/mediaApi';
 import { resolveAvatarUrl } from '../utils/avatarUrl';
 import { useTheme } from '../contexts/ThemeContext.jsx';
 import { useLanguage } from '../contexts/LanguageContext';
+import { usePWAInstall } from '../hooks/usePWAInstall';
 import { setMyStatus } from '../store/slices/presenceSlice';
 
 export default function Settings({ user, onProfileUpdate }) {
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const { theme, toggleTheme } = useTheme();
+  const { isStandalone, installApp } = usePWAInstall();
   const onlineIds = useSelector((s) => s.presence?.onlineIds || []);
   const myStatus = useSelector((s) => s.presence?.myStatus || 'online');
   const { language, setLanguage, languageOptions, t } = useLanguage();
@@ -226,6 +228,33 @@ export default function Settings({ user, onProfileUpdate }) {
             <div className="setting-row">
               <div><h4>{t('onlineStatus')}</h4><p>{t('onlineFriends', { count: onlineIds.length })}</p></div>
               <span className="badge success">{t('activeOnline', { count: onlineIds.length })}</span>
+            </div>
+
+            <div className="setting-row" style={{ marginTop: '16px', paddingTop: '16px', borderTop: '1px solid rgba(255,255,255,0.08)' }}>
+              <div>
+                <h4>📱 GioChat App (PWA)</h4>
+                <p>Install GioChat on your device for instant launch and full-screen experience.</p>
+              </div>
+              {isStandalone ? (
+                <span className="badge success" style={{ padding: '6px 12px', fontSize: '0.85rem' }}>
+                  <i className="fa-solid fa-circle-check"></i> Installed
+                </span>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => {
+                    installApp().then((res) => {
+                      if (!res?.success) {
+                        window.dispatchEvent(new CustomEvent('open-pwa-install-modal'));
+                      }
+                    });
+                  }}
+                  className="pwa-btn-install"
+                  style={{ padding: '8px 16px', fontSize: '0.88rem' }}
+                >
+                  <i className="fa-solid fa-download"></i> Install App
+                </button>
+              )}
             </div>
           </div>
         )}

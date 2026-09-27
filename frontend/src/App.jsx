@@ -4,6 +4,7 @@ import { useAuth } from './hooks/useAuth';
 import { useDispatch } from 'react-redux';
 import { addMessage, setConversations } from './store/slices/chatSlice';
 import { getMyConversations } from './api/conversationApi';
+import api from './api/axios';
 // import { usePresenceSocket } from './hooks/usePresenceSocket'; // <-- comment this
 import Navbar from './components/Navbar';
 import MobileBottomNav from './components/MobileBottomNav';
@@ -56,7 +57,10 @@ function IncomingCallManager({ user }) {
 export default function App() {
   const { user, loginUser, logout, updateStoredUser, isAuthenticated } = useAuth();
 
-  // usePresenceSocket(user); // <-- COMMENT THIS LINE - stops the ws://localhost:10000 403 spam
+  // Pre-warm backend on initial mount (wakes up Render free instance)
+  useEffect(() => {
+    api.get('/auth/health').catch(() => {});
+  }, []);
 
   return (
     <LanguageProvider>

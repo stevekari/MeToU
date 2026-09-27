@@ -107,6 +107,29 @@
     padding-left: 16px;
 }
 
+.navbar-install-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: linear-gradient(135deg, #4f46e5, #6366f1);
+    color: #ffffff;
+    border: none;
+    padding: 6px 12px;
+    border-radius: var(--radius-pill);
+    font-size: 0.82rem;
+    font-weight: 600;
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(99, 102, 241, 0.35);
+    transition: transform 0.15s ease, filter 0.15s ease;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.navbar-install-btn:hover {
+    filter: brightness(1.15);
+    transform: translateY(-1px);
+}
+
 .navbar-logout-btn {
     display: inline-flex;
     align-items: center;

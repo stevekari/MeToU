@@ -28,6 +28,14 @@ public class AuthController {
         this.jwtUtil = jwtUtil;
     }
 
+    @GetMapping({"/health", "/auth/health", "/api/health"})
+    public ResponseEntity<Map<String, Object>> health() {
+        Map<String, Object> status = new HashMap<>();
+        status.put("status", "UP");
+        status.put("timestamp", System.currentTimeMillis());
+        return ResponseEntity.ok(status);
+    }
+
     @PostMapping({"/register", "/auth/register"})
     public ResponseEntity<?> register(@RequestBody RegisterRequest request) {
         if (userRepository.existsByUsername(request.getUsername())) {

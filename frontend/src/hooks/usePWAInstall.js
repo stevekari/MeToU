@@ -5,13 +5,27 @@ export function usePWAInstall() {
     typeof window !== 'undefined' ? window.deferredPrompt || null : null
   );
   const [isStandalone, setIsStandalone] = useState(false);
+  const [isIOS, setIsIOS] = useState(false);
+  const [isAndroid, setIsAndroid] = useState(false);
 
   useEffect(() => {
-    // Check if running in standalone mode
+    if (typeof window === 'undefined') return;
+
+    // Detect standalone mode
     const isApp =
       window.matchMedia('(display-mode: standalone)').matches ||
-      window.navigator.standalone === true;
+      window.navigator.standalone === true ||
+      document.referrer.includes('android-app://');
     setIsStandalone(isApp);
+
+    // Detect iOS
+    const userAgent = window.navigator.userAgent.toLowerCase();
+    const ios = /iphone|ipad|ipod/.test(userAgent);
+    setIsIOS(ios);
+
+    // Detect Android
+    const android = /android/.test(userAgent);
+    setIsAndroid(android);
 
     const updatePrompt = (e) => {
       const prompt = e?.detail || window.deferredPrompt;
@@ -24,6 +38,7 @@ export function usePWAInstall() {
       e.preventDefault();
       window.deferredPrompt = e;
       setDeferredPrompt(e);
+      window.dispatchEvent(new CustomEvent('pwa-prompt-ready', { detail: e }));
     };
 
     const handleAppInstalled = () => {
@@ -50,7 +65,7 @@ export function usePWAInstall() {
   }, []);
 
   const installApp = async () => {
-    const promptEvent = deferredPrompt || window.deferredPrompt;
+    const promptEvent = deferredPrompt || (typeof window !== 'undefined' ? window.deferredPrompt : null);
     if (promptEvent && typeof promptEvent.prompt === 'function') {
       try {
         await promptEvent.prompt();
@@ -66,13 +81,15 @@ export function usePWAInstall() {
         console.warn('Install prompt error:', err);
       }
     }
-    return { success: false, notSupported: true };
+    return { success: false, notSupported: true, isIOS, isAndroid };
   };
 
   return {
     canInstall: !isStandalone,
     hasPrompt: !!(deferredPrompt || (typeof window !== 'undefined' && window.deferredPrompt)),
     isStandalone,
+    isIOS,
+    isAndroid,
     installApp,
   };
 }
