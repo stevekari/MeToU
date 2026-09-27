@@ -8,64 +8,43 @@
       content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
     />
 
-    <!-- PWA Primary Meta Tags -->
+    <!-- Primary Meta Tags -->
     <title>GioChat</title>
-    <meta name="application-name" content="GioChat" />
     <meta
       name="description"
       content="Connect instantly. Chat securely. Voice and video calling on any device."
     />
-    <meta name="theme-color" content="#0b0f19" />
+    <!-- PWA & Mobile Meta Tags -->
     <meta name="mobile-web-app-capable" content="yes" />
-
-    <!-- Favicons -->
-    <link rel="icon" type="image/png" href="/gc.png" />
-    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
-    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
-    <link rel="shortcut icon" href="/gc.png" />
-
-    <script>
-      window.__pwaPrompt = null;
-      window.addEventListener("beforeinstallprompt", function (e) {
-        e.preventDefault();
-        window.__pwaPrompt = e;
-        window.dispatchEvent(
-          new CustomEvent("pwa-prompt-ready", { detail: e }),
-        );
-      });
-      window.addEventListener("appinstalled", function () {
-        window.__pwaPrompt = null;
-      });
-    </script>
-
-    <!-- Apple iOS PWA Meta Tags & Touch Icons -->
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta
       name="apple-mobile-web-app-status-bar-style"
       content="black-translucent"
     />
     <meta name="apple-mobile-web-app-title" content="GioChat" />
-    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
-    <link
-      rel="apple-touch-icon"
-      sizes="180x180"
-      href="/icons/apple-touch-icon.png"
-    />
-
-    <!-- Web App Manifest -->
-    <link
-      rel="icon"
-      type="image/png"
-      sizes="192x192"
-      href="/icons/icon-192x192.png"
-    />
-    <link
-      rel="icon"
-      type="image/png"
-      sizes="512x512"
-      href="/icons/icon-512x512.png"
-    />
+    <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
     <link rel="manifest" href="/manifest.json" />
+
+    <script>
+      window.deferredPrompt = null;
+      window.addEventListener("beforeinstallprompt", function (e) {
+        e.preventDefault();
+        window.deferredPrompt = e;
+        window.dispatchEvent(
+          new CustomEvent("pwa-prompt-ready", { detail: e }),
+        );
+      });
+      window.addEventListener("appinstalled", function () {
+        window.deferredPrompt = null;
+        window.dispatchEvent(new Event("pwa-installed"));
+      });
+    </script>
+
+    <!-- Favicons -->
+    <link rel="icon" type="image/png" href="/gc.png" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
+    <link rel="shortcut icon" href="/gc.png" />
 
     <!-- Fonts & Icons -->
     <link
@@ -105,6 +84,16 @@
     />
 
     <title>Steve Chat</title>
+    <link rel="manifest" href="/manifest.json" />
+    <meta name="theme-color" content="#121212" />
+
+    <!-- iOS Safari Support -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta
+      name="apple-mobile-web-app-status-bar-style"
+      content="black-translucent"
+    />
+    <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
   </head>
 
   <body>

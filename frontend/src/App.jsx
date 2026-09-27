@@ -14,7 +14,7 @@ import Chat from './pages/Chat';
 import Calls from './pages/Calls';
 import Settings from './pages/Settings';
 import Footer from './components/Footer';
-import PWAInstallBanner from './components/PWAInstallBanner';
+import PWAInstallPrompt from './components/PWAInstallPrompt';
 import { LanguageProvider } from './contexts/LanguageContext';
 import { useIncomingCallNotifications } from './hooks/useIncomingCallNotifications';
 import IncomingCallPopup from './components/IncomingCallPopup';
@@ -76,7 +76,7 @@ export default function App() {
         </main>
         {isAuthenticated && <MobileBottomNav user={user} onLogout={logout} />}
         <Footer />
-        <PWAInstallBanner />
+        <PWAInstallPrompt />
       </div>
     </LanguageProvider>
   );

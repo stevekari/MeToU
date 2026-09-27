@@ -7,7 +7,7 @@ import { LanguageProvider } from './contexts/LanguageContext.jsx';
 import { ThemeProvider } from './contexts/ThemeContext.jsx';
 import { Provider } from 'react-redux';
 import { store } from './store/store.js';
-import { registerServiceWorker } from './utils/registerServiceWorker';
+import { registerServiceWorker } from './utils/registerServiceWorker.js';
 
 registerServiceWorker();
 

@@ -2,9 +2,10 @@
   "id": "/",
   "name": "GioChat",
   "short_name": "GioChat",
-  "description": "Connect instantly. Chat securely. Voice & Video calling.",
-  "start_url": "/",
+  "description": "Connect instantly. Chat securely. Voice and video calling.",
+  "start_url": "/?source=pwa",
   "scope": "/",
+  "prefer_related_applications": false,
   "display": "standalone",
   "orientation": "portrait-primary",
   "background_color": "#0b0f19",
@@ -33,26 +34,6 @@
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"
-    }
-  ],
-  "shortcuts": [
-    {
-      "name": "Chats",
-      "url": "/friends",
-      "description": "Open your conversations",
-      "icons": [{ "src": "/icons/icon-192x192.png", "sizes": "192x192" }]
-    },
-    {
-      "name": "Calls",
-      "url": "/calls",
-      "description": "View recent calls",
-      "icons": [{ "src": "/icons/icon-192x192.png", "sizes": "192x192" }]
-    },
-    {
-      "name": "Settings",
-      "url": "/settings",
-      "description": "App settings & profile",
-      "icons": [{ "src": "/icons/icon-192x192.png", "sizes": "192x192" }]
     }
   ]
 }
