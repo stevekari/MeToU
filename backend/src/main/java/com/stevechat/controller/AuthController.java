@@ -11,6 +11,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.UUID;
 
 @RestController
@@ -28,7 +30,7 @@ public class AuthController {
         this.jwtUtil = jwtUtil;
     }
 
-    @GetMapping({"/health", "/auth/health", "/api/health"})
+    @GetMapping({"/health", "/status"})
     public ResponseEntity<Map<String, Object>> health() {
         Map<String, Object> status = new HashMap<>();
         status.put("status", "UP");
