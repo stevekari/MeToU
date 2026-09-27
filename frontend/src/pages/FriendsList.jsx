@@ -96,6 +96,8 @@ export default function FriendsList() {
     setSelectedProfileUser(friend);
   };
 
+  const showSearchPopup = searchFocused && trimmedSearch.length >= 3;
+
   const handleStartCall = async (friend, type) => {
     try {
       const { conversationId } = await startConversation(friend.id);

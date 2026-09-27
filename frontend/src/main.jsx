@@ -8,6 +8,7 @@ import { ThemeProvider } from './contexts/ThemeContext.jsx';
 import { Provider } from 'react-redux';
 import { store } from './store/store.js';
 import { registerServiceWorker } from './utils/registerServiceWorker.js';
+import ErrorBoundary from './components/ErrorBoundary.jsx';
 
 registerServiceWorker();
 
@@ -28,15 +29,17 @@ if (typeof window !== 'undefined' && window.addEventListener) {
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
-    <Provider store={store}>
-      <BrowserRouter>
-        <ThemeProvider>
-          <LanguageProvider>
-            <App />
-          </LanguageProvider>
-        </ThemeProvider>
-      </BrowserRouter>
-    </Provider>
+    <ErrorBoundary>
+      <Provider store={store}>
+        <BrowserRouter>
+          <ThemeProvider>
+            <LanguageProvider>
+              <App />
+            </LanguageProvider>
+          </ThemeProvider>
+        </BrowserRouter>
+      </Provider>
+    </ErrorBoundary>
   </React.StrictMode>
 );
 
