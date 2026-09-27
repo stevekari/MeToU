@@ -22,13 +22,15 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
                 .setAllowedOriginPatterns(
                         "http://localhost:*",
                         "https://*.onrender.com",
-                        "https://*.fly.dev"
+                        "https://*.fly.dev",
+                        "*"
                 );
         registry.addEndpoint("/ws")
                 .setAllowedOriginPatterns(
                         "http://localhost:*",
                         "https://*.onrender.com",
-                        "https://*.fly.dev"
+                        "https://*.fly.dev",
+                        "*"
                 )
                 .withSockJS();
     }

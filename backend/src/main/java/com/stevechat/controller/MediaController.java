@@ -23,12 +23,7 @@ import java.util.UUID;
 
 @RestController
 @RequestMapping("/media")
-@CrossOrigin(origins = {
-        "https://your-frontend.onrender.com",
-        "capacitor://localhost",
-        "https://localhost",
-        "http://localhost:5173"
-})
+@CrossOrigin(origins = "*", allowedHeaders = "*")
 public class MediaController {
 
     private final Path uploadDir = Paths.get("uploads").toAbsolutePath().normalize();

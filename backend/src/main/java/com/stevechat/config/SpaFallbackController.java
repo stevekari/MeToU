@@ -12,6 +12,8 @@ public class SpaFallbackController {
             "/register",
             "/friends",
             "/settings",
+            "/calls",
+            "/calls/**",
             "/chat/**"
     })
     public String forwardSpa() {

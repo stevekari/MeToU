@@ -62,10 +62,13 @@ public class SecurityConfig {
                                 "/register",
                                 "/friends",
                                 "/settings",
+                                "/calls",
+                                "/calls/**",
                                 "/chat/**",
                                 "/error",
                                 "/static/**",
                                 "/assets/**",
+                                "/icons/**",
                                 "/*.js",
                                 "/*.css",
                                 "/*.ico",
@@ -74,7 +77,13 @@ public class SecurityConfig {
                                 "/*.jpeg",
                                 "/*.svg",
                                 "/*.json",
-                                "/*.webmanifest"
+                                "/*.webmanifest",
+                                "/sw.js",
+                                "/manifest.json",
+                                "/favicon.ico",
+                                "/favicon.svg",
+                                "/apple-touch-icon.png",
+                                "/gc.png"
                         ).permitAll()
                         .anyRequest().authenticated()
                 )
@@ -90,19 +99,12 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOriginPatterns(List.of(
-                "http://localhost:5173",
-                "http://localhost:*",
-                "https://metou-yyau.onrender.com",
-                "https://*.onrender.com",
-                "https://metou-yyau.fly.dev",
-                "https://*.fly.dev",
-                "*"
-        ));
-        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        configuration.setAllowedOriginPatterns(List.of("*"));
+        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS", "HEAD"));
         configuration.setAllowedHeaders(List.of("*"));
-        configuration.setExposedHeaders(List.of("Authorization"));
+        configuration.setExposedHeaders(List.of("Authorization", "Content-Type", "X-Requested-With", "Accept", "Origin", "Access-Control-Request-Method", "Access-Control-Request-Headers"));
         configuration.setAllowCredentials(true);
+        configuration.setMaxAge(3600L);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);

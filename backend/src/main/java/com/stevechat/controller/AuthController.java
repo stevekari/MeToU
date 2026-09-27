@@ -15,12 +15,7 @@ import java.util.UUID;
 
 @RestController
 @RequestMapping({"/auth", "/api/auth", "/api"})
-@CrossOrigin(origins = {
-        "https://your-frontend.onrender.com",
-        "capacitor://localhost",
-        "https://localhost",
-        "http://localhost:5173"
-})
+@CrossOrigin(origins = "*", allowedHeaders = "*")
 public class AuthController {
 
     private final UserRepository userRepository;
