@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { searchUsers, getPresenceMap } from "../api/userApi";
-import { getMyConversations, startConversation } from "../api/conversationApi";
+import { getMyConversations, startConversation, acceptChatRequest, declineChatRequest } from "../api/conversationApi";
 import FriendCard from "../components/FriendCard";
 import UserProfileModal from "../components/UserProfileModal";
 import { getMessagePreview } from "../utils/messageContent";
+import { resolveAvatarUrl } from "../utils/avatarUrl";
 import { useLanguage } from '../contexts/LanguageContext';
 import { useDispatch, useSelector } from 'react-redux';
 import { setConversations as setConversationState } from '../store/slices/chatSlice';
@@ -83,6 +84,42 @@ export default function FriendsList() {
       clearTimeout(timer);
     };
   }, [trimmedSearch, dispatch]);
+
+  const incomingRequests = useMemo(() => {
+    return sortedConversations.filter(
+      (c) => c.status === 'PENDING' && c.initiatorId != null && String(c.initiatorId) !== String(currentUserId)
+    );
+  }, [sortedConversations, currentUserId]);
+
+  const nonPendingConversations = useMemo(() => {
+    return sortedConversations.filter(
+      (c) => !(c.status === 'PENDING' && c.initiatorId != null && String(c.initiatorId) !== String(currentUserId))
+    );
+  }, [sortedConversations, currentUserId]);
+
+  const handleQuickAccept = async (e, convId) => {
+    e.stopPropagation();
+    try {
+      await acceptChatRequest(convId);
+      setConversations((prev) =>
+        prev.map((c) => (c.conversationId === convId ? { ...c, status: 'ACCEPTED' } : c))
+      );
+    } catch (err) {
+      console.error('Failed to accept request:', err);
+    }
+  };
+
+  const handleQuickDecline = async (e, convId) => {
+    e.stopPropagation();
+    try {
+      await declineChatRequest(convId);
+      setConversations((prev) =>
+        prev.map((c) => (c.conversationId === convId ? { ...c, status: 'DECLINED' } : c))
+      );
+    } catch (err) {
+      console.error('Failed to decline request:', err);
+    }
+  };
 
   const openChat = async (friend) => {
     try {
@@ -168,6 +205,68 @@ export default function FriendsList() {
           )}
         </div>
 
+        {/* Prominent Incoming Friend Requests Banner for Kwame / Recipient */}
+        {incomingRequests.length > 0 && (
+          <div className="incoming-requests-container">
+            <div className="incoming-requests-header">
+              <span className="incoming-badge">{incomingRequests.length}</span>
+              <span>Incoming Friend Requests</span>
+            </div>
+            {incomingRequests.map((req) => {
+              const reqDisplayName = req.otherUser?.displayName || req.otherUser?.username || 'User';
+              return (
+                <div
+                  key={req.conversationId}
+                  className="incoming-request-item"
+                  onClick={() =>
+                    navigate(`/chat/${req.conversationId}`, {
+                      state: { friend: req.otherUser },
+                    })
+                  }
+                >
+                  <div
+                    className="incoming-req-avatar-wrap"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setSelectedProfileUser(req.otherUser);
+                    }}
+                  >
+                    <img
+                      src={resolveAvatarUrl(req.otherUser?.avatarUrl, reqDisplayName)}
+                      alt={reqDisplayName}
+                      className="incoming-req-avatar"
+                    />
+                  </div>
+                  <div className="incoming-req-details">
+                    <strong className="incoming-req-name">{reqDisplayName}</strong>
+                    <span className="incoming-req-text">sent you a request</span>
+                  </div>
+                  <div className="incoming-req-actions">
+                    <button
+                      type="button"
+                      className="btn-req-accept-icon"
+                      onClick={(e) => handleQuickAccept(e, req.conversationId)}
+                      title="Accept Request"
+                      aria-label="Accept Request"
+                    >
+                      <i className="fa-solid fa-check"></i>
+                    </button>
+                    <button
+                      type="button"
+                      className="btn-req-decline-icon"
+                      onClick={(e) => handleQuickDecline(e, req.conversationId)}
+                      title="Decline Request"
+                      aria-label="Decline Request"
+                    >
+                      <i className="fa-solid fa-xmark"></i>
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
         {conversations.length === 0 && (
           <div className="no-chats-box">
             <i className="fa-solid fa-comments no-chats-icon" />
@@ -177,7 +276,7 @@ export default function FriendsList() {
         )}
 
         <div className="friends-list">
-          {sortedConversations.map((conv) => (
+          {nonPendingConversations.map((conv) => (
             <FriendCard
               key={conv.conversationId}
               friend={conv.otherUser}

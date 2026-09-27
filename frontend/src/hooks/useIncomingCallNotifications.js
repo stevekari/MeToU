@@ -189,6 +189,17 @@ export function useIncomingCallNotifications(userId, onMessage) {
           body: '{}',
         });
 
+        // User-specific conversation updates (friend requests sent/received/accepted/declined)
+        client.subscribe(`/topic/user.${userId}.conversations`, (frame) => {
+          try {
+            getMyConversations().then((items) => {
+              setConversations(items);
+            }).catch(() => {});
+          } catch (e) {
+            console.warn('User conversation update error', e);
+          }
+        });
+
         syncSubscriptions(client);
       },
       onStompError: () => {},

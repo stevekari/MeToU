@@ -253,6 +253,8 @@ public class ConversationController {
         event.put("status", "ACCEPTED");
         event.put("acceptedBy", me.getId());
         messagingTemplate.convertAndSend("/topic/conversation." + id, event);
+        messagingTemplate.convertAndSend("/topic/user." + conv.getUserAId() + ".conversations", event);
+        messagingTemplate.convertAndSend("/topic/user." + conv.getUserBId() + ".conversations", event);
 
         return ResponseEntity.ok(Map.of("success", true, "status", "ACCEPTED", "conversationId", id));
     }
@@ -278,6 +280,8 @@ public class ConversationController {
         event.put("status", "DECLINED");
         event.put("declinedBy", me.getId());
         messagingTemplate.convertAndSend("/topic/conversation." + id, event);
+        messagingTemplate.convertAndSend("/topic/user." + conv.getUserAId() + ".conversations", event);
+        messagingTemplate.convertAndSend("/topic/user." + conv.getUserBId() + ".conversations", event);
 
         return ResponseEntity.ok(Map.of("success", true, "status", "DECLINED", "conversationId", id));
     }
