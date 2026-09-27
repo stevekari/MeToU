@@ -372,15 +372,10 @@ export default function Chat({ currentUserId }) {
     };
   }, [trimmedSearch, dispatch]);
 
-  const openChat = async (nextFriend) => {
-    const { conversationId: nextConversationId } = await startConversation(nextFriend.id);
-    navigate(`/chat/${nextConversationId}`, { state: { friend: nextFriend } });
-  };
-
-  const selectFromSearch = (nextFriend) => {
+  const handleSelectFromSearch = (nextFriend) => {
     setSearch('');
     setSearchFocused(false);
-    openChat(nextFriend);
+    setSelectedProfileUser(nextFriend);
   };
 
   const friendDisplayName = friend?.displayName || friend?.username || 'User';
@@ -431,11 +426,11 @@ export default function Chat({ currentUserId }) {
                     className="search-popup-item"
                     style={{ animationDelay: `${index * 30}ms` }}
                     onMouseDown={(e) => e.preventDefault()}
+                    onClick={() => handleSelectFromSearch(nextFriend)}
                   >
                     <FriendCard
                       friend={nextFriend}
-                      onAvatarClick={(f) => setSelectedProfileUser(f)}
-                      onClick={() => selectFromSearch(nextFriend)}
+                      onAvatarClick={(f) => handleSelectFromSearch(f)}
                     />
                   </div>
                 ))}

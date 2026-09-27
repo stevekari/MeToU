@@ -90,12 +90,10 @@ export default function FriendsList() {
     }
   };
 
-  const showSearchPopup = searchFocused && trimmedSearch.length >= 3;
-
-  const selectFromSearch = (friend) => {
+  const handleSelectFromSearch = (friend) => {
     setSearch("");
     setSearchFocused(false);
-    openChat(friend);
+    setSelectedProfileUser(friend);
   };
 
   const handleStartCall = async (friend, type) => {
@@ -153,11 +151,11 @@ export default function FriendsList() {
                     className="search-popup-item"
                     style={{ animationDelay: `${index * 30}ms` }}
                     onMouseDown={(e) => e.preventDefault()}
-                    onClick={() => selectFromSearch(friend)}
+                    onClick={() => handleSelectFromSearch(friend)}
                   >
                     <FriendCard
                       friend={friend}
-                      onAvatarClick={(f) => setSelectedProfileUser(f)}
+                      onAvatarClick={(f) => handleSelectFromSearch(f)}
                     />
                   </div>
                 ))}
