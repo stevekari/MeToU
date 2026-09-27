@@ -4,6 +4,29 @@ export function startConversation(friendId) {
   return api.post('/conversations/start', { friendId }).then((res) => res.data);
 }
 
+export function sendFriendRequest(friendId) {
+  return api.post('/conversations/start', { friendId: Number(friendId) })
+    .catch(() => api.post('/conversations/request', { friendId: Number(friendId) }))
+    .then((res) => res.data);
+}
+
+export function resendChatRequest(conversationId, friendId) {
+  if (friendId) {
+    return sendFriendRequest(friendId);
+  }
+  if (conversationId) {
+    return api.post(`/conversations/${conversationId}/resend`)
+      .catch(() => api.post('/conversations/start', { conversationId: Number(conversationId) }))
+      .then((res) => res.data);
+  }
+  return Promise.resolve(null);
+}
+
+export function getConversationWithUser(friendId) {
+  if (!friendId) return Promise.resolve(null);
+  return api.get(`/conversations/with/${friendId}`).then((res) => res.data).catch(() => null);
+}
+
 export function getConversationDetails(conversationId) {
   if (!conversationId) return Promise.resolve(null);
   return api.get(`/conversations/${conversationId}`).then((res) => res.data).catch(() => null);

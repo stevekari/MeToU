@@ -18,6 +18,14 @@ export default class ErrorBoundary extends React.Component {
     window.location.reload();
   };
 
+  handleReset = () => {
+    try {
+      localStorage.clear();
+      sessionStorage.clear();
+    } catch (_) {}
+    window.location.href = '/';
+  };
+
   handleGoHome = () => {
     window.location.href = '/';
   };
@@ -42,16 +50,34 @@ export default class ErrorBoundary extends React.Component {
             border: '1px solid rgba(255, 255, 255, 0.12)',
             borderRadius: '20px',
             padding: '32px 24px',
-            maxWidth: '420px',
+            maxWidth: '440px',
             width: '100%',
             boxShadow: '0 20px 40px rgba(0,0,0,0.5)'
           }}>
             <div style={{ fontSize: '2.5rem', marginBottom: '12px' }}>💬</div>
             <h2 style={{ margin: '0 0 8px 0', fontSize: '1.25rem', fontWeight: 700 }}>Something went wrong</h2>
-            <p style={{ margin: '0 0 24px 0', fontSize: '0.88rem', color: '#94a3b8', lineHeight: 1.5 }}>
-              An unexpected error occurred. You can reload the page or return to the main chat screen.
+            <p style={{ margin: '0 0 16px 0', fontSize: '0.88rem', color: '#94a3b8', lineHeight: 1.5 }}>
+              An unexpected error occurred. You can reload the page or reset the app cache.
             </p>
-            <div style={{ display: 'flex', gap: '10px', justifyContent: 'center' }}>
+
+            {this.state.error && (
+              <div style={{
+                background: 'rgba(239, 68, 68, 0.1)',
+                border: '1px solid rgba(239, 68, 68, 0.25)',
+                borderRadius: '8px',
+                padding: '10px',
+                marginBottom: '20px',
+                fontSize: '0.78rem',
+                color: '#fca5a5',
+                textAlign: 'left',
+                overflowX: 'auto',
+                fontFamily: 'monospace'
+              }}>
+                {String(this.state.error.message || this.state.error)}
+              </div>
+            )}
+
+            <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', flexWrap: 'wrap' }}>
               <button
                 onClick={this.handleReload}
                 style={{
@@ -65,10 +91,10 @@ export default class ErrorBoundary extends React.Component {
                   cursor: 'pointer'
                 }}
               >
-                Reload App
+                Reload Page
               </button>
               <button
-                onClick={this.handleGoHome}
+                onClick={this.handleReset}
                 style={{
                   background: 'rgba(255, 255, 255, 0.08)',
                   color: '#e2e8f0',
@@ -80,7 +106,7 @@ export default class ErrorBoundary extends React.Component {
                   cursor: 'pointer'
                 }}
               >
-                Go Home
+                Reset & Restart
               </button>
             </div>
           </div>

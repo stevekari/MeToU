@@ -22,7 +22,7 @@ import java.util.Map;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/media")
+@RequestMapping({"/media", "/api/media"})
 @CrossOrigin(origins = "*", allowedHeaders = "*")
 public class MediaController {
 

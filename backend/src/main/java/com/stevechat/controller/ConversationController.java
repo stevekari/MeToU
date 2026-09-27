@@ -22,7 +22,7 @@ import java.util.List;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/conversations")
+@RequestMapping({"/conversations", "/api/conversations"})
 @CrossOrigin(origins = "*", allowedHeaders = "*")
 public class ConversationController {
 
@@ -54,6 +54,19 @@ public class ConversationController {
     public ResponseEntity<?> start(@RequestBody Map<String, Long> body, Authentication auth) {
         User me = currentUser(auth);
         Long friendId = body.get("friendId");
+        Long convId = body.get("conversationId");
+
+        Conversation conversation = null;
+        if (convId != null) {
+            conversation = conversationRepository.findById(convId).orElse(null);
+            if (conversation != null) {
+                if (conversation.getUserAId().equals(me.getId())) {
+                    friendId = conversation.getUserBId();
+                } else if (conversation.getUserBId().equals(me.getId())) {
+                    friendId = conversation.getUserAId();
+                }
+            }
+        }
 
         if (friendId == null || friendId.equals(me.getId())) {
             return ResponseEntity.badRequest().body("Invalid friendId");
@@ -65,13 +78,116 @@ public class ConversationController {
         Long a = Math.min(me.getId(), friendId);
         Long b = Math.max(me.getId(), friendId);
 
-        Conversation conversation = conversationRepository.findByUserAIdAndUserBId(a, b)
-                .orElseGet(() -> conversationRepository.save(new Conversation(a, b, me.getId(), "PENDING")));
+        if (conversation == null) {
+            conversation = conversationRepository.findByUserAIdAndUserBId(a, b).orElse(null);
+        }
+        if (conversation == null) {
+            conversation = conversationRepository.save(new Conversation(a, b, me.getId(), "PENDING"));
+        } else if ("DECLINED".equalsIgnoreCase(conversation.getStatus())) {
+            conversation.setStatus("PENDING");
+            conversation.setInitiatorId(me.getId());
+            conversation = conversationRepository.save(conversation);
+
+            Map<String, Object> event = new HashMap<>();
+            event.put("type", "CONVERSATION_PENDING");
+            event.put("conversationId", conversation.getId());
+            event.put("status", "PENDING");
+            event.put("initiatorId", me.getId());
+            event.put("fromUser", new UserDto(me));
+            messagingTemplate.convertAndSend("/topic/conversation." + conversation.getId(), event);
+        }
 
         Map<String, Object> resp = new HashMap<>();
         resp.put("conversationId", conversation.getId());
         resp.put("status", conversation.getStatus() != null ? conversation.getStatus() : "ACCEPTED");
         resp.put("initiatorId", conversation.getInitiatorId());
+        return ResponseEntity.ok(resp);
+    }
+
+    // Explicitly send or re-send friend request (without requiring message)
+    @PostMapping("/request")
+    public ResponseEntity<?> sendRequest(@RequestBody Map<String, Long> body, Authentication auth) {
+        User me = currentUser(auth);
+        Long friendId = body.get("friendId");
+
+        if (friendId == null || friendId.equals(me.getId())) {
+            return ResponseEntity.badRequest().body("Invalid friendId");
+        }
+        if (!userRepository.existsById(friendId)) {
+            return ResponseEntity.badRequest().body("User not found");
+        }
+
+        Long a = Math.min(me.getId(), friendId);
+        Long b = Math.max(me.getId(), friendId);
+
+        Conversation conversation = conversationRepository.findByUserAIdAndUserBId(a, b).orElse(null);
+        if (conversation == null) {
+            conversation = new Conversation(a, b, me.getId(), "PENDING");
+        } else {
+            conversation.setStatus("PENDING");
+            conversation.setInitiatorId(me.getId());
+        }
+        conversation = conversationRepository.save(conversation);
+
+        Map<String, Object> event = new HashMap<>();
+        event.put("type", "CONVERSATION_PENDING");
+        event.put("conversationId", conversation.getId());
+        event.put("status", "PENDING");
+        event.put("initiatorId", me.getId());
+        event.put("fromUser", new UserDto(me));
+        messagingTemplate.convertAndSend("/topic/conversation." + conversation.getId(), event);
+
+        Map<String, Object> resp = new HashMap<>();
+        resp.put("conversationId", conversation.getId());
+        resp.put("status", "PENDING");
+        resp.put("initiatorId", me.getId());
+        return ResponseEntity.ok(resp);
+    }
+
+    // Re-send declined request by conversationId
+    @PostMapping("/{id}/resend")
+    public ResponseEntity<?> resendRequest(@PathVariable Long id, Authentication auth) {
+        User me = currentUser(auth);
+        Conversation conv = conversationRepository.findById(id).orElse(null);
+        if (conv == null) {
+            return ResponseEntity.notFound().build();
+        }
+        if (!conv.getUserAId().equals(me.getId()) && !conv.getUserBId().equals(me.getId())) {
+            return ResponseEntity.status(403).body("Not part of this conversation");
+        }
+
+        conv.setStatus("PENDING");
+        conv.setInitiatorId(me.getId());
+        conversationRepository.save(conv);
+
+        Map<String, Object> event = new HashMap<>();
+        event.put("type", "CONVERSATION_PENDING");
+        event.put("conversationId", id);
+        event.put("status", "PENDING");
+        event.put("initiatorId", me.getId());
+        messagingTemplate.convertAndSend("/topic/conversation." + id, event);
+
+        return ResponseEntity.ok(Map.of("success", true, "status", "PENDING", "conversationId", id));
+    }
+
+    // Get relationship status with a specific user
+    @GetMapping("/with/{friendId}")
+    public ResponseEntity<?> getConversationWithUser(@PathVariable Long friendId, Authentication auth) {
+        User me = currentUser(auth);
+        Long a = Math.min(me.getId(), friendId);
+        Long b = Math.max(me.getId(), friendId);
+
+        Conversation conv = conversationRepository.findByUserAIdAndUserBId(a, b).orElse(null);
+        if (conv == null) {
+            return ResponseEntity.ok(Map.of("exists", false, "status", "NONE"));
+        }
+
+        Map<String, Object> resp = new HashMap<>();
+        resp.put("exists", true);
+        resp.put("conversationId", conv.getId());
+        resp.put("status", conv.getStatus() != null ? conv.getStatus() : "ACCEPTED");
+        resp.put("initiatorId", conv.getInitiatorId());
+        resp.put("isInitiator", conv.getInitiatorId() != null && conv.getInitiatorId().equals(me.getId()));
         return ResponseEntity.ok(resp);
     }
 

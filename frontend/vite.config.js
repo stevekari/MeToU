@@ -16,14 +16,30 @@ export default defineConfig({
       "Cross-Origin-Opener-Policy": "same-origin-allow-popups",
     },
     proxy: {
+      "/auth": {
+        target: "http://localhost:10000",
+        changeOrigin: true,
+      },
       "/api": {
         target: "http://localhost:10000",
         changeOrigin: true,
       },
-      "/socket.io": {
+      "/ws": {
         target: "http://localhost:10000",
         changeOrigin: true,
         ws: true,
+      },
+      "/conversations": {
+        target: "http://localhost:10000",
+        changeOrigin: true,
+      },
+      "/users": {
+        target: "http://localhost:10000",
+        changeOrigin: true,
+      },
+      "/media": {
+        target: "http://localhost:10000",
+        changeOrigin: true,
       },
       "/uploads": {
         target: "http://localhost:10000",

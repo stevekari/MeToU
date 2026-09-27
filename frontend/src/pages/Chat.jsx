@@ -7,6 +7,7 @@ import {
   getConversationDetails,
   acceptChatRequest,
   declineChatRequest,
+  resendChatRequest,
 } from '../api/conversationApi';
 import { searchUsers, getPresenceMap } from '../api/userApi';
 import { useWebSocket } from '../hooks/useWebSocket';
@@ -324,6 +325,28 @@ export default function Chat({ currentUserId }) {
     }
   };
 
+  const handleResendRequest = async () => {
+    try {
+      setRequestActionLoading(true);
+      const targetFriendId = friend?.id || friend?.userId || friend?._id;
+      await resendChatRequest(conversationId, targetFriendId);
+      setConversationStatus('PENDING');
+      setConversationInitiatorId(currentUserId);
+      setConversations((prev) => {
+        const list = Array.isArray(prev) ? prev : [];
+        return list.map((c) =>
+          String(c.conversationId) === String(conversationId)
+            ? { ...c, status: 'PENDING', initiatorId: currentUserId }
+            : c
+        );
+      });
+    } catch (err) {
+      console.error('Failed to resend chat request:', err);
+    } finally {
+      setRequestActionLoading(false);
+    }
+  };
+
 
   useEffect(() => {
     setLoading(true);
@@ -619,11 +642,34 @@ export default function Chat({ currentUserId }) {
         )}
 
         {isDeclined && (
-          <div className="chat-request-bar declined-request">
-            <i className="fa-solid fa-ban declined-ban-icon"></i>
-            <div className="chat-request-info">
-              <span>This chat request was declined.</span>
+          <div className="chat-request-bar declined-request" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <i className="fa-solid fa-ban declined-ban-icon"></i>
+              <div className="chat-request-info">
+                <span>This chat request was declined.</span>
+              </div>
             </div>
+            <button
+              type="button"
+              className="btn-req-resend"
+              onClick={handleResendRequest}
+              disabled={requestActionLoading}
+              style={{
+                background: 'linear-gradient(135deg, #4f46e5, #6366f1)',
+                color: '#fff',
+                border: 'none',
+                borderRadius: '8px',
+                padding: '8px 14px',
+                fontWeight: '600',
+                fontSize: '0.85rem',
+                cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px'
+              }}
+            >
+              <i className="fa-solid fa-rotate-right"></i> Send Request Again
+            </button>
           </div>
         )}
 
