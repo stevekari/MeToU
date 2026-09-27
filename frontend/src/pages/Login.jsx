@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { login } from '../api/authApi';
 import { useLanguage } from '../contexts/LanguageContext';
 import GoogleSignInButton from '../components/GoogleSignInButton';
+import gcLogo from '../assets/gc.png';
 
 export default function Login({ onLogin }) {
   const [username, setUsername] = useState('');
@@ -31,7 +32,11 @@ export default function Login({ onLogin }) {
   return (
     <div className="auth-page">
       <form className="auth-card" onSubmit={handleSubmit}>
-        <h1>{t('welcomeBack')}</h1>
+        <div className="auth-header">
+          <img src={gcLogo} alt="GioChat" className="auth-logo" />
+          <h1>{t('welcomeBack')}</h1>
+          <p className="auth-sub">GioChat • Connect & Chat</p>
+        </div>
 
         <GoogleSignInButton
           onSuccess={handleGoogleSuccess}

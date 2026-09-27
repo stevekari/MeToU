@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { register } from '../api/authApi';
 import { useLanguage } from '../contexts/LanguageContext';
 import GoogleSignInButton from '../components/GoogleSignInButton';
+import gcLogo from '../assets/gc.png';
 
 export default function Register({ onLogin }) {
   const [username, setUsername] = useState('');
@@ -10,7 +11,7 @@ export default function Register({ onLogin }) {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const navigate = useNavigate();
-  const { t } = useLanguage();
+  const { language, setLanguage, languageOptions, t } = useLanguage();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -32,7 +33,11 @@ export default function Register({ onLogin }) {
   return (
     <div className="auth-page">
       <form className="auth-card" onSubmit={handleSubmit}>
-        <h1>{t('createAccount')}</h1>
+        <div className="auth-header">
+          <img src={gcLogo} alt="GioChat" className="auth-logo" />
+          <h1>{t('createAccount')}</h1>
+          <p className="auth-sub">GioChat • Join the Community</p>
+        </div>
 
         <GoogleSignInButton
           onSuccess={handleGoogleSuccess}
@@ -42,6 +47,21 @@ export default function Register({ onLogin }) {
         <div className="auth-divider">
           <span>{t('or')}</span>
         </div>
+
+        <label htmlFor="language">{t('language')}</label>
+        <select
+          id="language"
+          value={language}
+          onChange={(e) => {
+            setLanguage(e.target.value);
+          }}
+        >
+          {languageOptions.map((option) => (
+            <option key={option.value} value={option.value}>
+              {option.label}
+            </option>
+          ))}
+        </select>
 
         <label>{t('username')}</label>
         <input value={username} onChange={(e) => setUsername(e.target.value)} required />

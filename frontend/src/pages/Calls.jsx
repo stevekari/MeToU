@@ -15,7 +15,7 @@ export default function Calls({ currentUserId }) {
 
   const [calls, setCalls] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState('all'); // 'all' | 'missed'
+  const [filter, setFilter] = useState('all'); // 'all' | 'missed' | 'received' | 'outgoing'
   const [search, setSearch] = useState('');
 
   const onlineIds = useSelector((state) => state.presence?.onlineUserIds || []);
@@ -24,7 +24,6 @@ export default function Calls({ currentUserId }) {
   const fetchCallsData = useCallback(async () => {
     setLoading(true);
     try {
-      // 1. Try dedicated calls API
       let callList = [];
       try {
         const apiCalls = await getCalls();
@@ -99,10 +98,19 @@ export default function Calls({ currentUserId }) {
       .catch(() => {});
   }, [fetchCallsData, dispatch]);
 
-  const handleStartCall = async (friend, callType) => {
-    if (!friend?.id) return;
+  const handleStartCall = async (friend, callType = 'voice', existingConversationId = null) => {
+    const friendId = friend?.id || friend?.userId;
+    if (!friendId && !existingConversationId) return;
+
+    if (existingConversationId) {
+      navigate(`/chat/${existingConversationId}`, {
+        state: { friend, startCallType: callType },
+      });
+      return;
+    }
+
     try {
-      const res = await startConversation(friend.id);
+      const res = await startConversation(friendId);
       navigate(`/chat/${res.conversationId}`, {
         state: { friend, startCallType: callType },
       });
@@ -113,8 +121,17 @@ export default function Calls({ currentUserId }) {
 
   const filteredCalls = useMemo(() => {
     return calls.filter((c) => {
-      const matchesFilter = filter === 'all' || (filter === 'missed' && c.direction === 'missed');
-      const matchesSearch = !search.trim() || c.otherUser?.username?.toLowerCase().includes(search.trim().toLowerCase());
+      const matchesFilter =
+        filter === 'all' ||
+        (filter === 'missed' && c.direction === 'missed') ||
+        (filter === 'received' && c.direction === 'received') ||
+        (filter === 'outgoing' && c.direction === 'outgoing');
+
+      const matchesSearch =
+        !search.trim() ||
+        c.otherUser?.username?.toLowerCase().includes(search.trim().toLowerCase()) ||
+        c.otherUser?.displayName?.toLowerCase().includes(search.trim().toLowerCase());
+
       return matchesFilter && matchesSearch;
     });
   }, [calls, filter, search]);
@@ -150,14 +167,28 @@ export default function Calls({ currentUserId }) {
                 className={`calls-filter-tab ${filter === 'all' ? 'active' : ''}`}
                 onClick={() => setFilter('all')}
               >
-                {t('allCalls')}
+                {t('allCalls') || 'All'}
               </button>
               <button
                 type="button"
                 className={`calls-filter-tab ${filter === 'missed' ? 'active' : ''}`}
                 onClick={() => setFilter('missed')}
               >
-                {t('missedCalls')}
+                {t('missedCalls') || 'Missed'}
+              </button>
+              <button
+                type="button"
+                className={`calls-filter-tab ${filter === 'received' ? 'active' : ''}`}
+                onClick={() => setFilter('received')}
+              >
+                {t('received') || 'Received'}
+              </button>
+              <button
+                type="button"
+                className={`calls-filter-tab ${filter === 'outgoing' ? 'active' : ''}`}
+                onClick={() => setFilter('outgoing')}
+              >
+                {t('outgoing') || 'Called'}
               </button>
             </div>
           </div>
@@ -211,11 +242,26 @@ export default function Calls({ currentUserId }) {
                 const isMissed = callItem.direction === 'missed';
                 const isOutgoing = callItem.direction === 'outgoing';
                 const isReceived = callItem.direction === 'received';
+                const defaultCallType = callItem.mediaType || 'voice';
 
                 return (
-                  <div key={callItem.id} className="call-item-row">
+                  <div
+                    key={callItem.id}
+                    className="call-item-row"
+                    onClick={() => handleStartCall(friend, defaultCallType, callItem.conversationId)}
+                    role="button"
+                    tabIndex={0}
+                    title={`Tap to call ${friend?.username || 'user'} (${defaultCallType})`}
+                  >
                     {/* Avatar */}
-                    <div className="friend-avatar-wrap">
+                    <div
+                      className="friend-avatar-wrap"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        navigate(`/chat/${callItem.conversationId}`, { state: { friend } });
+                      }}
+                      title="Open chat"
+                    >
                       <img
                         src={resolveAvatarUrl(friend?.avatarUrl, friend?.username)}
                         alt={friend?.username || 'User'}
@@ -224,19 +270,10 @@ export default function Calls({ currentUserId }) {
                       <span className={`online-dot ${statusClass}`} />
                     </div>
 
-                    {/* Info */}
-                    <div
-                      className="call-item-info"
-                      onClick={() =>
-                        navigate(`/chat/${callItem.conversationId}`, {
-                          state: { friend },
-                        })
-                      }
-                      role="button"
-                      tabIndex={0}
-                    >
+                    {/* Info - WhatsApp Style Clickable to Call */}
+                    <div className="call-item-info">
                       <span className={`call-item-name ${isMissed ? 'missed' : ''}`}>
-                        {friend?.username || 'User'}
+                        {friend?.displayName || friend?.username || 'User'}
                       </span>
                       <div className="call-item-details">
                         {/* 
@@ -261,7 +298,7 @@ export default function Calls({ currentUserId }) {
                           </span>
                         )}
 
-                        <span className="call-status-text">
+                        <span className={`call-status-text ${isMissed ? 'missed' : ''}`}>
                           {isMissed ? t('missed') : isOutgoing ? t('outgoing') : t('received')}
                         </span>
                         <span className="call-time-divider">•</span>
@@ -270,11 +307,11 @@ export default function Calls({ currentUserId }) {
                     </div>
 
                     {/* Action Call Buttons */}
-                    <div className="call-item-actions">
+                    <div className="call-item-actions" onClick={(e) => e.stopPropagation()}>
                       <button
                         type="button"
                         className="call-quick-btn voice"
-                        onClick={() => handleStartCall(friend, 'voice')}
+                        onClick={() => handleStartCall(friend, 'voice', callItem.conversationId)}
                         title={t('startVoiceCall')}
                         aria-label={t('startVoiceCall')}
                       >
@@ -283,7 +320,7 @@ export default function Calls({ currentUserId }) {
                       <button
                         type="button"
                         className="call-quick-btn video"
-                        onClick={() => handleStartCall(friend, 'video')}
+                        onClick={() => handleStartCall(friend, 'video', callItem.conversationId)}
                         title={t('startVideoCall')}
                         aria-label={t('startVideoCall')}
                       >

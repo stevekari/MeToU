@@ -93,6 +93,7 @@ export function useWebRTCCall({ conversationId, currentUserId, sendSignal, onSig
       echoCancellation: true,
       noiseSuppression: true,
       autoGainControl: true,
+      channelCount: 1,
     };
 
     if (type === 'video') {
@@ -103,13 +104,14 @@ export function useWebRTCCall({ conversationId, currentUserId, sendSignal, onSig
             facingMode: { ideal: facingMode },
             width: { ideal: 1280, max: 1920 },
             height: { ideal: 720, max: 1080 },
+            frameRate: { ideal: 30, max: 30 },
           },
         });
       } catch (err) {
         log('Advanced video constraints failed, trying basic video:', err);
         try {
           return await navigator.mediaDevices.getUserMedia({
-            audio: true,
+            audio: audioConstraints,
             video: true,
           });
         } catch (basicErr) {
@@ -141,14 +143,26 @@ export function useWebRTCCall({ conversationId, currentUserId, sendSignal, onSig
     const stream = await getMediaStream(type, currentFacingModeRef.current);
     log('Acquired local media stream', stream);
 
+    // Global STUN and Multi-Network TURN Relays (enables cross-network 4G/5G/WiFi calls)
     const iceServers = [
       { urls: 'stun:stun.l.google.com:19302' },
       { urls: 'stun:stun1.l.google.com:19302' },
       { urls: 'stun:stun2.l.google.com:19302' },
       { urls: 'stun:stun3.l.google.com:19302' },
       { urls: 'stun:stun4.l.google.com:19302' },
-      { urls: 'stun:stun.services.mozilla.com' },
       { urls: 'stun:global.stun.twilio.com:3478' },
+      { urls: 'stun:stun.services.mozilla.com' },
+      // Public Open TURN Relays (UDP & TLS/TCP for symmetric NAT & mobile carrier traversal)
+      {
+        urls: [
+          'turn:openrelay.metered.ca:80',
+          'turn:openrelay.metered.ca:443',
+          'turn:openrelay.metered.ca:443?transport=tcp',
+          'turns:openrelay.metered.ca:443?transport=tcp',
+        ],
+        username: 'openrelayproject',
+        credential: 'openrelayproject',
+      },
     ];
 
     const turnUrls = (import.meta.env.VITE_TURN_URLS || import.meta.env.VITE_TURN_URL || '')
@@ -159,7 +173,7 @@ export function useWebRTCCall({ conversationId, currentUserId, sendSignal, onSig
     const turnCredential = import.meta.env.VITE_TURN_CREDENTIAL;
 
     if (turnUrls.length > 0 && turnUsername && turnCredential) {
-      iceServers.push({
+      iceServers.unshift({
         urls: turnUrls,
         username: turnUsername,
         credential: turnCredential,
@@ -169,6 +183,8 @@ export function useWebRTCCall({ conversationId, currentUserId, sendSignal, onSig
     const peer = new RTCPeerConnection({
       iceServers,
       iceCandidatePoolSize: 10,
+      bundlePolicy: 'max-bundle',
+      rtcpMuxPolicy: 'require',
     });
 
     stream.getTracks().forEach((track) => peer.addTrack(track, stream));
@@ -194,18 +210,18 @@ export function useWebRTCCall({ conversationId, currentUserId, sendSignal, onSig
       setIsRinging(false);
       setCallState('connected');
 
-      let stream = event.streams?.[0];
-      if (!stream) {
+      let remoteMediaStream = event.streams?.[0];
+      if (!remoteMediaStream) {
         if (!remoteStreamRef.current) {
           remoteStreamRef.current = new MediaStream();
         }
         remoteStreamRef.current.addTrack(event.track);
-        stream = remoteStreamRef.current;
+        remoteMediaStream = remoteStreamRef.current;
       } else {
-        remoteStreamRef.current = stream;
+        remoteStreamRef.current = remoteMediaStream;
       }
-      setRemoteStream(stream);
-      log('Updated remote stream with tracks:', stream.getTracks().map((t) => t.kind));
+      setRemoteStream(remoteMediaStream);
+      log('Updated remote stream with tracks:', remoteMediaStream.getTracks().map((t) => t.kind));
     };
 
     peer.oniceconnectionstatechange = () => {
@@ -215,19 +231,36 @@ export function useWebRTCCall({ conversationId, currentUserId, sendSignal, onSig
         setCallState('connected');
         setIsRinging(false);
         stopCallSounds();
+      } else if (peer.iceConnectionState === 'disconnected') {
+        log('ICE disconnected, attempting graceful reconnection');
+        if (typeof peer.restartIce === 'function') {
+          peer.restartIce();
+        }
+      } else if (peer.iceConnectionState === 'failed') {
+        log('ICE failed, triggering ICE restart');
+        if (typeof peer.restartIce === 'function') {
+          peer.restartIce();
+        } else {
+          setError(t('connectionError'));
+        }
       }
     };
 
     peer.onconnectionstatechange = () => {
       log('Connection state changed to', peer.connectionState);
-      if (peer.connectionState === 'failed') {
-        setError(t('connectionError'));
-      } else if (peer.connectionState === 'connected') {
+      if (peer.connectionState === 'connected') {
         setError('');
         setCallState('connected');
         setIsRinging(false);
         stopCallSounds();
         callSounds.playConnectedSound();
+      } else if (peer.connectionState === 'failed') {
+        log('Connection state failed');
+        if (typeof peer.restartIce === 'function') {
+          peer.restartIce();
+        } else {
+          setError(t('connectionError'));
+        }
       }
     };
 

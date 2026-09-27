@@ -3,13 +3,13 @@
   "name": "GioChat",
   "short_name": "GioChat",
   "description": "Connect instantly. Chat securely. Voice and video calling.",
-  "start_url": "/?source=pwa",
+  "start_url": "/",
   "scope": "/",
-  "prefer_related_applications": false,
   "display": "standalone",
   "orientation": "portrait-primary",
   "background_color": "#0b0f19",
   "theme_color": "#0b0f19",
+  "prefer_related_applications": false,
   "icons": [
     {
       "src": "/gc.png",

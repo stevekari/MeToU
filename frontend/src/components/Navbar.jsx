@@ -9,7 +9,7 @@ export default function Navbar({ user, onLogout }) {
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const { theme, toggleTheme } = useTheme();
-  const { t } = useLanguage();
+  const { language, setLanguage, languageOptions, t } = useLanguage();
   const myStatus = useSelector((state) => state.presence?.myStatus || 'online');
 
   const handleLogout = () => {
@@ -45,6 +45,22 @@ export default function Navbar({ user, onLogout }) {
               <option value="online">🟢 {t('online')}</option>
               <option value="busy">🟡 {t('busy')}</option>
               <option value="offline">⚪ {t('offline')}</option>
+            </select>
+          </div>
+
+          <div className="navbar-lang-wrap nav-desktop-only">
+            <select
+              className="navbar-lang-select"
+              value={language}
+              onChange={(e) => setLanguage(e.target.value)}
+              aria-label={t('language')}
+              title={t('language')}
+            >
+              {languageOptions.map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
+                </option>
+              ))}
             </select>
           </div>
 

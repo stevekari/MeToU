@@ -130,6 +130,30 @@
     color: var(--danger);
 }
 
+.navbar-lang-wrap {
+    display: flex;
+    align-items: center;
+    background: var(--surface-hi);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-pill);
+    padding: 3px 8px;
+}
+
+.navbar-lang-select {
+    background: transparent;
+    border: none;
+    color: var(--text);
+    font-size: 0.82rem;
+    font-weight: 500;
+    cursor: pointer;
+    outline: none;
+}
+
+.navbar-lang-select option {
+    background: var(--surface);
+    color: var(--text);
+}
+
 @media (max-width: 768px) {
     .nav-desktop-only {
         display: none !important;
