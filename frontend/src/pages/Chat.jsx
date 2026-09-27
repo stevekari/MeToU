@@ -640,9 +640,17 @@ export default function Chat({ currentUserId }) {
               {isPending && isInitiator && (
                 <div className="person-hero-status pending-sent">
                   <div className="hero-status-tag">
-                    <i className="fa-regular fa-clock"></i> Request Pending
+                    <i className="fa-regular fa-clock"></i> Friend Request Sent
                   </div>
-                  <p>Waiting for {friendDisplayName} to accept your friend request.</p>
+                  <p>Waiting for {friendDisplayName} to accept your request.</p>
+                  <button
+                    type="button"
+                    className="btn-view-profile"
+                    onClick={() => setSelectedProfileUser(friend)}
+                    style={{ marginTop: '6px' }}
+                  >
+                    <i className="fa-regular fa-user"></i> View Profile
+                  </button>
                 </div>
               )}
 
@@ -750,15 +758,6 @@ export default function Chat({ currentUserId }) {
               >
                 <i className="fa-solid fa-xmark"></i> Decline
               </button>
-            </div>
-          </div>
-        )}
-
-        {isPending && isInitiator && (
-          <div className="chat-request-bar pending-request">
-            <i className="fa-regular fa-clock pending-clock-icon"></i>
-            <div className="chat-request-info">
-              <span>Waiting for <strong>{friendDisplayName}</strong> to accept your chat request.</span>
             </div>
           </div>
         )}

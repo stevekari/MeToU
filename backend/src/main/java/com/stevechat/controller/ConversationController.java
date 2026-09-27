@@ -88,7 +88,9 @@ public class ConversationController {
             event.put("initiatorId", me.getId());
             event.put("fromUser", new UserDto(me));
             messagingTemplate.convertAndSend("/topic/conversation." + conversation.getId(), event);
-        } else if ("DECLINED".equalsIgnoreCase(conversation.getStatus())) {
+            messagingTemplate.convertAndSend("/topic/user." + friendId + ".conversations", event);
+            messagingTemplate.convertAndSend("/topic/user." + me.getId() + ".conversations", event);
+        } else if (!"ACCEPTED".equalsIgnoreCase(conversation.getStatus())) {
             conversation.setStatus("PENDING");
             conversation.setInitiatorId(me.getId());
             conversation = conversationRepository.save(conversation);
@@ -100,11 +102,13 @@ public class ConversationController {
             event.put("initiatorId", me.getId());
             event.put("fromUser", new UserDto(me));
             messagingTemplate.convertAndSend("/topic/conversation." + conversation.getId(), event);
+            messagingTemplate.convertAndSend("/topic/user." + friendId + ".conversations", event);
+            messagingTemplate.convertAndSend("/topic/user." + me.getId() + ".conversations", event);
         }
 
         Map<String, Object> resp = new HashMap<>();
         resp.put("conversationId", conversation.getId());
-        resp.put("status", conversation.getStatus() != null ? conversation.getStatus() : "ACCEPTED");
+        resp.put("status", conversation.getStatus() != null ? conversation.getStatus() : "PENDING");
         resp.put("initiatorId", conversation.getInitiatorId());
         return ResponseEntity.ok(resp);
     }
@@ -141,6 +145,8 @@ public class ConversationController {
         event.put("initiatorId", me.getId());
         event.put("fromUser", new UserDto(me));
         messagingTemplate.convertAndSend("/topic/conversation." + conversation.getId(), event);
+        messagingTemplate.convertAndSend("/topic/user." + friendId + ".conversations", event);
+        messagingTemplate.convertAndSend("/topic/user." + me.getId() + ".conversations", event);
 
         Map<String, Object> resp = new HashMap<>();
         resp.put("conversationId", conversation.getId());
