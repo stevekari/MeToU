@@ -21,8 +21,7 @@ import { formatTimeAgo } from '../utils/timeAgo';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useWebRTCCall } from '../hooks/useWebRTCCall';
 import CallPanel from '../components/CallPanel';
-import { useDispatch, useSelector } from 'react-redux';
-import { setActiveConversation } from '../store/slices/chatSlice';
+import { setActiveConversation, setMessages as setStoreMessages, addMessage as addStoreMessage, updateMessage as updateStoreMessage } from '../store/slices/chatSlice';
 import { setUserStatuses } from '../store/slices/presenceSlice';
 
 export default function Chat({ currentUserId }) {
@@ -68,6 +67,31 @@ export default function Chat({ currentUserId }) {
     scrollToBottom(safeMessages.length <= 1 ? 'auto' : 'smooth');
   }, [safeMessages.length, scrollToBottom]);
 
+  const reduxMessages = useSelector((s) => s.chat?.messagesByConv?.[String(conversationId)]);
+
+  // Synchronize any background incoming messages arriving via Redux
+  useEffect(() => {
+    if (reduxMessages && Array.isArray(reduxMessages) && reduxMessages.length > 0) {
+      setMessages((prev) => {
+        const list = Array.isArray(prev) ? prev : [];
+        const map = new Map();
+        list.forEach((m) => {
+          if (m.id) map.set(m.id, m);
+          else map.set(`${m.senderId}-${m.timestamp}`, m);
+        });
+        reduxMessages.forEach((m) => {
+          if (m.id) map.set(m.id, { ...(map.get(m.id) || {}), ...m });
+          else map.set(`${m.senderId}-${m.timestamp}`, m);
+        });
+        return Array.from(map.values()).sort((a, b) => {
+          const tA = new Date(a.timestamp || a.createdAt || 0).getTime();
+          const tB = new Date(b.timestamp || b.createdAt || 0).getTime();
+          return tA - tB;
+        });
+      });
+    }
+  }, [reduxMessages, conversationId]);
+
   const userStatuses = useSelector((s) => s.presence?.userStatuses || {});
   const onlineIds = useSelector((s) => s.presence?.onlineIds || []);
   const typingMap = useSelector((s) => s.presence?.typing || {});
@@ -97,15 +121,35 @@ export default function Chat({ currentUserId }) {
       }
     }
 
-    setMessages((prev) => {
-      const list = Array.isArray(prev) ? prev : [];
-      if (message.id && list.some((m) => m.id === message.id)) {
-        return list.map((m) => (m.id === message.id ? { ...m, ...message } : m));
-      }
-      return message.content ? [...list, message] : list;
-    });
+    if (message.content) {
+      setMessages((prev) => {
+        const list = Array.isArray(prev) ? prev : [];
+        if (message.id && list.some((m) => m.id === message.id)) {
+          return list.map((m) => (m.id === message.id ? { ...m, ...message } : m));
+        }
+        return [...list, message];
+      });
 
-  }, []);
+      if (message.conversationId) {
+        dispatch(addStoreMessage({ conversationId: String(message.conversationId), message }));
+      }
+
+      setConversations((prev) => {
+        const list = Array.isArray(prev) ? prev : [];
+        const updated = list.map((c) =>
+          String(c.conversationId) === String(message.conversationId || conversationId)
+            ? {
+                ...c,
+                lastMessage: message.content,
+                lastMessageTime: message.timestamp || new Date().toISOString(),
+                lastMessageAt: message.timestamp || new Date().toISOString(),
+              }
+            : c
+        );
+        return sortConversations(updated);
+      });
+    }
+  }, [conversationId, dispatch]);
 
   const handleReceipt = useCallback((receipt) => {
     if (!receipt) return;
@@ -358,14 +402,16 @@ export default function Chat({ currentUserId }) {
     setLoading(true);
     getMessages(conversationId)
       .then((msgs) => {
-        setMessages(Array.isArray(msgs) ? msgs : []);
+        const list = Array.isArray(msgs) ? msgs : [];
+        setMessages(list);
+        dispatch(setStoreMessages({ conversationId, messages: list }));
         sendReadReceipt();
       })
       .catch(() => {
         setMessages([]);
       })
       .finally(() => setLoading(false));
-  }, [conversationId, sendReadReceipt]);
+  }, [conversationId, sendReadReceipt, dispatch]);
 
   const trimmedSearch = search.trim();
   const showSearchPopup = searchFocused && trimmedSearch.length >= 3;
@@ -804,12 +850,9 @@ export default function Chat({ currentUserId }) {
           friend={friend}
           isMutedAudio={call.isMutedAudio}
           isMutedVideo={call.isMutedVideo}
-          isScreenSharing={call.isScreenSharing}
-          connectionQuality={call.connectionQuality}
           toggleMuteAudio={call.toggleMuteAudio}
           toggleMuteVideo={call.toggleMuteVideo}
           switchCamera={call.switchCamera}
-          toggleScreenShare={call.toggleScreenShare}
           onAccept={call.acceptCall}
           onEnd={call.callState === 'incoming' ? call.rejectCall : call.endCall}
         />

@@ -189,9 +189,35 @@ export function useIncomingCallNotifications(userId, onMessage) {
           body: '{}',
         });
 
-        // User-specific conversation updates (friend requests sent/received/accepted/declined)
+        // User-specific direct message updates (ensures 100% instant real-time message delivery without refresh)
+        client.subscribe(`/topic/user.${userId}.messages`, (frame) => {
+          try {
+            const message = JSON.parse(frame.body);
+            if (message && message.conversationId) {
+              if (message.action === 'MESSAGE_EDIT' || message.action === 'MESSAGE_DELETE') {
+                dispatch(updateMessage({ conversationId: String(message.conversationId), message }));
+              } else {
+                dispatch(addMessage({ conversationId: String(message.conversationId), message }));
+              }
+              onMessageRef.current?.(message);
+            }
+          } catch (e) {
+            console.warn('User direct message update error', e);
+          }
+        });
+
+        // User-specific conversation updates (friend requests sent/received/accepted/declined & message previews)
         client.subscribe(`/topic/user.${userId}.conversations`, (frame) => {
           try {
+            const data = JSON.parse(frame.body);
+            if (data && data.conversationId && data.content) {
+              if (data.action === 'MESSAGE_EDIT' || data.action === 'MESSAGE_DELETE') {
+                dispatch(updateMessage({ conversationId: String(data.conversationId), message: data }));
+              } else {
+                dispatch(addMessage({ conversationId: String(data.conversationId), message: data }));
+              }
+              onMessageRef.current?.(data);
+            }
             getMyConversations().then((items) => {
               setConversations(items);
             }).catch(() => {});

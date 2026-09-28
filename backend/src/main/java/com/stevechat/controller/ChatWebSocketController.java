@@ -72,6 +72,8 @@ public class ChatWebSocketController {
             event.put("conversationId", conv.getId());
             event.put("status", "ACCEPTED");
             messagingTemplate.convertAndSend("/topic/conversation." + conv.getId(), event);
+            messagingTemplate.convertAndSend("/topic/user." + conv.getUserAId() + ".conversations", event);
+            messagingTemplate.convertAndSend("/topic/user." + conv.getUserBId() + ".conversations", event);
         }
 
         Message message = new Message(
@@ -86,7 +88,13 @@ public class ChatWebSocketController {
         Message saved = messageRepository.save(message);
 
         MessageDto dto = new MessageDto(saved, "MESSAGE_CREATE");
+        // Broadcast to conversation topic
         messagingTemplate.convertAndSend("/topic/conversation." + request.getConversationId(), dto);
+        // Direct delivery to both participants' user streams (guarantees instant appearance without refresh)
+        messagingTemplate.convertAndSend("/topic/user." + conv.getUserAId() + ".messages", dto);
+        messagingTemplate.convertAndSend("/topic/user." + conv.getUserBId() + ".messages", dto);
+        messagingTemplate.convertAndSend("/topic/user." + conv.getUserAId() + ".conversations", dto);
+        messagingTemplate.convertAndSend("/topic/user." + conv.getUserBId() + ".conversations", dto);
         return dto;
     }
 
@@ -172,8 +180,14 @@ public class ChatWebSocketController {
         message.setEditedAt(LocalDateTime.now());
         Message saved = messageRepository.save(message);
 
+        Conversation conv = conversationRepository.findById(saved.getConversationId()).orElse(null);
+
         MessageDto dto = new MessageDto(saved, "MESSAGE_EDIT");
         messagingTemplate.convertAndSend("/topic/conversation." + saved.getConversationId(), dto);
+        if (conv != null) {
+            messagingTemplate.convertAndSend("/topic/user." + conv.getUserAId() + ".messages", dto);
+            messagingTemplate.convertAndSend("/topic/user." + conv.getUserBId() + ".messages", dto);
+        }
     }
 
     // Real-time message delete
@@ -196,8 +210,14 @@ public class ChatWebSocketController {
         message.setContent("This message was deleted");
         Message saved = messageRepository.save(message);
 
+        Conversation conv = conversationRepository.findById(saved.getConversationId()).orElse(null);
+
         MessageDto dto = new MessageDto(saved, "MESSAGE_DELETE");
         messagingTemplate.convertAndSend("/topic/conversation." + saved.getConversationId(), dto);
+        if (conv != null) {
+            messagingTemplate.convertAndSend("/topic/user." + conv.getUserAId() + ".messages", dto);
+            messagingTemplate.convertAndSend("/topic/user." + conv.getUserBId() + ".messages", dto);
+        }
     }
 
     @MessageMapping("/call.signal")

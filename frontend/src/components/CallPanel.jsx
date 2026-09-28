@@ -12,12 +12,9 @@ export default function CallPanel({
   friend,
   isMutedAudio = false,
   isMutedVideo = false,
-  isScreenSharing = false,
-  connectionQuality = 'good',
   toggleMuteAudio,
   toggleMuteVideo,
   switchCamera,
-  toggleScreenShare,
   onAccept,
   onEnd,
 }) {
@@ -49,18 +46,6 @@ export default function CallPanel({
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-  };
-
-  const togglePictureInPicture = async () => {
-    try {
-      if (document.pictureInPictureElement) {
-        await document.exitPictureInPicture();
-      } else if (remoteVideoRef.current) {
-        await remoteVideoRef.current.requestPictureInPicture();
-      }
-    } catch (err) {
-      console.warn('Picture in Picture failed:', err);
-    }
   };
 
   // Attach remote video callback
@@ -164,7 +149,7 @@ export default function CallPanel({
           {/* Local Video Picture-in-Picture */}
           <video
             ref={attachLocalVideo}
-            className={`local-video ${isMutedVideo && !isScreenSharing ? 'camera-off' : ''}`}
+            className={`local-video ${isMutedVideo ? 'camera-off' : ''}`}
             autoPlay
             muted
             playsInline
@@ -174,18 +159,8 @@ export default function CallPanel({
           {/* Connected Call Duration Header for Video */}
           {connected && (
             <div className="video-call-header-overlay">
-              <div className="video-header-left">
-                <span className="video-peer-name">{friendName}</span>
-                <span className="video-call-duration">{formatDuration(durationSec)}</span>
-              </div>
-              <div className={`call-quality-indicator quality-${connectionQuality}`} title={`Connection: ${connectionQuality}`}>
-                <span className="signal-bars">
-                  <span className="bar bar-1"></span>
-                  <span className="bar bar-2"></span>
-                  <span className="bar bar-3"></span>
-                </span>
-                {connectionQuality === 'reconnecting' && <span className="quality-text">Reconnecting...</span>}
-              </div>
+              <span className="video-peer-name">{friendName}</span>
+              <span className="video-call-duration">{formatDuration(durationSec)}</span>
             </div>
           )}
         </div>
@@ -212,19 +187,6 @@ export default function CallPanel({
                   ? t(isRinging ? 'ringing' : 'calling')
                   : t('voiceCall')}
           </span>
-
-          {connected && (
-            <div className={`call-quality-indicator voice-quality quality-${connectionQuality}`} title={`Connection: ${connectionQuality}`}>
-              <span className="signal-bars">
-                <span className="bar bar-1"></span>
-                <span className="bar bar-2"></span>
-                <span className="bar bar-3"></span>
-              </span>
-              <span className="quality-text">
-                {connectionQuality === 'reconnecting' ? 'Reconnecting...' : `${connectionQuality} network`}
-              </span>
-            </div>
-          )}
         </div>
       )}
 
@@ -290,30 +252,6 @@ export default function CallPanel({
                 aria-label={t('switchCamera')}
               >
                 <i className="fa-solid fa-camera-rotate"></i>
-              </button>
-            )}
-
-            {videoCall && connected && toggleScreenShare && (
-              <button
-                type="button"
-                className={`btn-call-ctrl ${isScreenSharing ? 'active-share' : ''}`}
-                onClick={toggleScreenShare}
-                title={isScreenSharing ? 'Stop Screen Sharing' : 'Share Screen'}
-                aria-label="Share screen"
-              >
-                <i className="fa-solid fa-desktop"></i>
-              </button>
-            )}
-
-            {videoCall && connected && typeof document !== 'undefined' && document.pictureInPictureEnabled && (
-              <button
-                type="button"
-                className="btn-call-ctrl"
-                onClick={togglePictureInPicture}
-                title="Picture in Picture"
-                aria-label="Picture in Picture"
-              >
-                <i className="fa-solid fa-up-right-from-square"></i>
               </button>
             )}
 
