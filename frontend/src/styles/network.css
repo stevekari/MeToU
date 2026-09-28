@@ -1,0 +1,237 @@
+/* ==========================================================================
+   Network & Professional Directory Styles
+   ========================================================================== */
+
+.network-container {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 24px 16px 80px 16px;
+  box-sizing: border-box;
+}
+
+.network-hero {
+  background: var(--bg-card, #1e2430);
+  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.08));
+  border-radius: 16px;
+  padding: 24px;
+  margin-bottom: 24px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+}
+
+.network-hero h1 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--text-main, #ffffff);
+  margin-bottom: 6px;
+}
+
+.network-hero p {
+  font-size: 0.92rem;
+  color: var(--text-muted, #94a3b8);
+  margin-bottom: 16px;
+}
+
+.network-filter-bar {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.network-search-input {
+  flex: 1;
+  min-width: 240px;
+  background: var(--bg-input, rgba(255, 255, 255, 0.05));
+  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.1));
+  border-radius: 10px;
+  padding: 10px 16px;
+  color: var(--text-main, #fff);
+  font-size: 0.9rem;
+}
+
+.network-tabs {
+  display: flex;
+  gap: 8px;
+  border-bottom: 1px solid var(--border-color, rgba(255, 255, 255, 0.08));
+  margin-bottom: 20px;
+  padding-bottom: 10px;
+}
+
+.network-tab-btn {
+  background: none;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 8px;
+  color: var(--text-muted, #94a3b8);
+  font-weight: 600;
+  font-size: 0.92rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.network-tab-btn.active {
+  background: rgba(16, 185, 129, 0.15);
+  color: var(--primary-color, #10b981);
+}
+
+.network-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 20px;
+}
+
+.network-card {
+  background: var(--bg-card, #1e2430);
+  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.08));
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
+}
+
+.network-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(16, 185, 129, 0.3);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+}
+
+.network-card-banner {
+  height: 60px;
+  background: linear-gradient(135deg, #10b981, #059669, #3b82f6);
+  background-size: cover;
+  background-position: center;
+}
+
+.network-card-body {
+  padding: 0 16px 16px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  position: relative;
+}
+
+.network-card-avatar {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  border: 3px solid var(--bg-card, #1e2430);
+  margin: -32px auto 8px;
+  object-fit: cover;
+  background: var(--bg-hover, #2b3548);
+}
+
+.network-card-name {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--text-main, #ffffff);
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.network-card-headline {
+  font-size: 0.82rem;
+  color: var(--text-muted, #94a3b8);
+  margin: 4px 0 6px;
+  line-height: 1.3;
+  min-height: 2.6em;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.network-card-location {
+  font-size: 0.78rem;
+  color: var(--text-muted, #64748b);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: 10px;
+}
+
+.network-skills-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  justify-content: center;
+  margin-bottom: 14px;
+  min-height: 26px;
+}
+
+.network-skill-badge {
+  font-size: 0.72rem;
+  background: var(--bg-hover, rgba(255, 255, 255, 0.05));
+  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.08));
+  padding: 2px 8px;
+  border-radius: 12px;
+  color: var(--text-muted, #cbd5e1);
+}
+
+.network-card-actions {
+  margin-top: auto;
+  display: flex;
+  gap: 8px;
+}
+
+.btn-network-connect {
+  flex: 1;
+  background: var(--primary-color, #10b981);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-weight: 600;
+  font-size: 0.85rem;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: opacity 0.2s;
+}
+
+.btn-network-connect.connected {
+  background: var(--bg-hover, rgba(255, 255, 255, 0.1));
+  color: var(--text-muted, #94a3b8);
+  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.1));
+}
+
+.btn-network-message {
+  background: var(--bg-hover, rgba(255, 255, 255, 0.06));
+  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.1));
+  color: var(--text-main, #fff);
+  border-radius: 8px;
+  padding: 8px 12px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.85rem;
+}
+
+/* Business Directory Cards */
+.business-card {
+  border-top: 3px solid #3b82f6;
+}
+
+.business-services-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 8px 0 12px;
+  text-align: left;
+  background: var(--bg-hover, rgba(255, 255, 255, 0.03));
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  color: var(--text-muted, #94a3b8);
+}
