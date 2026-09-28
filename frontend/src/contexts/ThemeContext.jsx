@@ -7,7 +7,6 @@ export function ThemeProvider({ children }) {
     try {
       return localStorage.getItem('themeMode') || 'dark';
     } catch {
-      return 'dark';
     }
   });
 

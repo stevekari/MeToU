@@ -8,12 +8,17 @@ public class SpaFallbackController {
 
     @GetMapping({
             "/",
+            "/feed",
             "/login",
             "/register",
             "/friends",
             "/settings",
             "/calls",
             "/calls/**",
+            "/network",
+            "/network/**",
+            "/profile",
+            "/profile/**",
             "/chat/**"
     })
     public String forwardSpa() {
