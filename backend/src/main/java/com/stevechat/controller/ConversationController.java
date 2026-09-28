@@ -305,17 +305,14 @@ public class ConversationController {
                     User other = userRepository.findById(otherId).orElse(null);
                     UserDto otherDto = other != null ? new UserDto(other) : null;
 
-                    List<Message> allMsgs = messageRepository.findByConversationIdOrderByTimestampAsc(conv.getId());
-                    Message last = allMsgs.isEmpty() ? null : allMsgs.get(allMsgs.size() - 1);
+                    Message last = messageRepository
+                            .findTopByConversationIdOrderByTimestampDesc(conv.getId())
+                            .orElse(null);
 
                     String lastContent = null;
                     if (last != null) {
                         lastContent = last.getIsDeleted() ? "This message was deleted" : last.getContent();
                     }
-
-                    long unreadCount = allMsgs.stream()
-                            .filter(m -> !m.getSenderId().equals(me.getId()) && !"READ".equalsIgnoreCase(m.getStatus()) && !Boolean.TRUE.equals(m.getIsDeleted()))
-                            .count();
 
                     return new ConversationDto(
                             conv.getId(),
@@ -323,8 +320,7 @@ public class ConversationController {
                             lastContent,
                             last != null ? last.getTimestamp() : conv.getCreatedAt(),
                             conv.getStatus() != null ? conv.getStatus() : "ACCEPTED",
-                            conv.getInitiatorId(),
-                            unreadCount
+                            conv.getInitiatorId()
                     );
                 })
                 .toList();

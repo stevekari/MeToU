@@ -9,26 +9,20 @@ public class ConversationDto {
     private LocalDateTime lastMessageTime;
     private String status;
     private Long initiatorId;
-    private Long unreadCount = 0L;
 
     public ConversationDto() {}
 
     public ConversationDto(Long conversationId, UserDto otherUser, String lastMessage, LocalDateTime lastMessageTime) {
-        this(conversationId, otherUser, lastMessage, lastMessageTime, "ACCEPTED", null, 0L);
+        this(conversationId, otherUser, lastMessage, lastMessageTime, "ACCEPTED", null);
     }
 
     public ConversationDto(Long conversationId, UserDto otherUser, String lastMessage, LocalDateTime lastMessageTime, String status, Long initiatorId) {
-        this(conversationId, otherUser, lastMessage, lastMessageTime, status, initiatorId, 0L);
-    }
-
-    public ConversationDto(Long conversationId, UserDto otherUser, String lastMessage, LocalDateTime lastMessageTime, String status, Long initiatorId, Long unreadCount) {
         this.conversationId = conversationId;
         this.otherUser = otherUser;
         this.lastMessage = lastMessage;
         this.lastMessageTime = lastMessageTime;
         this.status = status != null ? status : "ACCEPTED";
         this.initiatorId = initiatorId;
-        this.unreadCount = unreadCount != null ? unreadCount : 0L;
     }
 
     public Long getConversationId() { return conversationId; }
@@ -48,8 +42,5 @@ public class ConversationDto {
 
     public Long getInitiatorId() { return initiatorId; }
     public void setInitiatorId(Long initiatorId) { this.initiatorId = initiatorId; }
-
-    public Long getUnreadCount() { return unreadCount != null ? unreadCount : 0L; }
-    public void setUnreadCount(Long unreadCount) { this.unreadCount = unreadCount; }
 }
 

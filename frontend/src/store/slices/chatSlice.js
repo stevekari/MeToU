@@ -17,7 +17,7 @@ const chatSlice = createSlice({
           ...conversation,
           lastMessage: conversation.lastMessage,
           lastMessageAt: conversation.lastMessageTime,
-          unread: isActive ? 0 : (conversation.unreadCount !== undefined ? Number(conversation.unreadCount) : (state.conversations[id]?.unread || 0)),
+          unread: isActive ? 0 : (state.conversations[id]?.unread || 0),
         };
         return items;
       }, {});

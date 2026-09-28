@@ -23,6 +23,7 @@ import { ToastProvider, useToast } from './contexts/ToastContext';
 import ToastContainer from './components/ToastContainer';
 import { useIncomingCallNotifications } from './hooks/useIncomingCallNotifications';
 import IncomingCallPopup from './components/IncomingCallPopup';
+import CookieBanner from './components/CookieBanner';
 
 function RequireAuth({ isAuthenticated, children }) {
   if (!isAuthenticated) return <Navigate to="/login" replace />;
@@ -93,6 +94,7 @@ export default function App() {
           {isAuthenticated && <MobileBottomNav user={user} />}
           <Footer />
           <PWAInstallPrompt />
+          <CookieBanner />
         </div>
       </ToastProvider>
     </LanguageProvider>
