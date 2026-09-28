@@ -15,11 +15,13 @@ import {
 } from '../api/conversationApi';
 import { formatJoinedDate, formatLastSeenText } from '../utils/timeAgo';
 import { resolveAvatarUrl } from '../utils/avatarUrl';
+import { useToast } from '../contexts/ToastContext';
 import '../styles/profileModal.css';
 import '../styles/feed.css';
 
 export default function UserProfileModal({ user, userId, onClose, onStartCall }) {
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [profile, setProfile] = useState(user || null);
   const [loading, setLoading] = useState(!user && Boolean(userId));
   const [posts, setPosts] = useState([]);
@@ -145,10 +147,9 @@ export default function UserProfileModal({ user, userId, onClose, onStartCall })
       setRelLoading(true);
       await blockUser(relationship.conversationId);
       setRelationship((prev) => ({ ...prev, status: 'BLOCKED' }));
-      setActionSuccessMsg('Contact blocked');
-      setTimeout(() => setActionSuccessMsg(''), 3000);
+      toast.block(`${displayName} has been blocked.`, 'User Blocked');
     } catch (err) {
-      alert('Failed to block contact');
+      toast.error('Failed to block contact');
     } finally {
       setRelLoading(false);
     }
@@ -160,10 +161,9 @@ export default function UserProfileModal({ user, userId, onClose, onStartCall })
       setRelLoading(true);
       await unblockUser(relationship.conversationId);
       setRelationship((prev) => ({ ...prev, status: 'ACCEPTED' }));
-      setActionSuccessMsg('Contact unblocked');
-      setTimeout(() => setActionSuccessMsg(''), 3000);
+      toast.unblock(`${displayName} has been unblocked.`, 'User Unblocked');
     } catch (err) {
-      alert('Failed to unblock contact');
+      toast.error('Failed to unblock contact');
     } finally {
       setRelLoading(false);
     }
@@ -175,10 +175,11 @@ export default function UserProfileModal({ user, userId, onClose, onStartCall })
     try {
       setRelLoading(true);
       await deleteConversation(relationship.conversationId);
+      toast.delete(`Conversation with ${displayName} deleted.`, 'Chat Deleted');
       onClose();
       navigate('/friends');
     } catch (err) {
-      alert('Failed to delete conversation');
+      toast.error('Failed to delete conversation');
     } finally {
       setRelLoading(false);
     }

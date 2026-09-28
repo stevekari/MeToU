@@ -12,7 +12,9 @@ import com.stevechat.repository.PostLikeRepository;
 import com.stevechat.repository.PostRepository;
 import com.stevechat.repository.UserRepository;
 import org.springframework.http.ResponseEntity;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.security.core.Authentication;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.*;
@@ -27,15 +29,18 @@ public class PostController {
     private final PostLikeRepository postLikeRepository;
     private final PostCommentRepository postCommentRepository;
     private final UserRepository userRepository;
+    private final SimpMessagingTemplate messagingTemplate;
 
     public PostController(PostRepository postRepository,
                           PostLikeRepository postLikeRepository,
                           PostCommentRepository postCommentRepository,
-                          UserRepository userRepository) {
+                          UserRepository userRepository,
+                          SimpMessagingTemplate messagingTemplate) {
         this.postRepository = postRepository;
         this.postLikeRepository = postLikeRepository;
         this.postCommentRepository = postCommentRepository;
         this.userRepository = userRepository;
+        this.messagingTemplate = messagingTemplate;
     }
 
     private User currentUser(Authentication auth) {
@@ -111,7 +116,19 @@ public class PostController {
         me.setPostImpressions(me.getPostImpressions() + 10);
         userRepository.save(me);
 
-        return ResponseEntity.ok(mapToDto(saved, me.getId()));
+        PostDto postDto = mapToDto(saved, me.getId());
+
+        // Broadcast new post notification to all online friends & users
+        Map<String, Object> event = new HashMap<>();
+        event.put("type", "NEW_POST");
+        event.put("action", "NEW_POST");
+        event.put("post", postDto);
+        event.put("author", new UserDto(me));
+        event.put("title", (me.getDisplayName() != null && !me.getDisplayName().isBlank() ? me.getDisplayName() : me.getUsername()) + " created a new post");
+        event.put("snippet", post.getContent().length() > 60 ? post.getContent().substring(0, 60) + "..." : post.getContent());
+        messagingTemplate.convertAndSend("/topic/posts", event);
+
+        return ResponseEntity.ok(postDto);
     }
 
     @PostMapping("/{id}/like")
@@ -147,12 +164,35 @@ public class PostController {
         }
 
         postRepository.save(post);
-        return ResponseEntity.ok(Map.of(
-                "postId", id,
-                "likesCount", post.getLikesCount(),
-                "isLikedByMe", likedNow,
-                "myReaction", likedNow ? reactionType : ""
-        ));
+
+        Map<String, Object> resp = new HashMap<>();
+        resp.put("postId", id);
+        resp.put("likesCount", post.getLikesCount());
+        resp.put("isLikedByMe", likedNow);
+        resp.put("myReaction", likedNow ? reactionType : "");
+
+        // Real-time broadcast
+        Map<String, Object> event = new HashMap<>();
+        event.put("type", "POST_LIKED");
+        event.put("postId", id);
+        event.put("likesCount", post.getLikesCount());
+        event.put("isLiked", likedNow);
+        event.put("reactionType", reactionType);
+        event.put("actor", new UserDto(me));
+        messagingTemplate.convertAndSend("/topic/posts", event);
+
+        // If liked and not self-like, notify the post author directly
+        if (likedNow && !post.getAuthorId().equals(me.getId())) {
+            Map<String, Object> notif = new HashMap<>();
+            notif.put("type", "POST_LIKED_NOTIFICATION");
+            notif.put("postId", id);
+            notif.put("actor", new UserDto(me));
+            notif.put("title", (me.getDisplayName() != null ? me.getDisplayName() : me.getUsername()) + " liked your post");
+            notif.put("snippet", post.getContent().length() > 50 ? post.getContent().substring(0, 50) + "..." : post.getContent());
+            messagingTemplate.convertAndSend("/topic/user." + post.getAuthorId() + ".notifications", notif);
+        }
+
+        return ResponseEntity.ok(resp);
     }
 
     @GetMapping("/{id}/comments")
@@ -186,11 +226,43 @@ public class PostController {
         post.setCommentsCount(post.getCommentsCount() + 1);
         postRepository.save(post);
 
-        return ResponseEntity.ok(new PostCommentDto(saved, new UserDto(me)));
+        PostCommentDto commentDto = new PostCommentDto(saved, new UserDto(me));
+
+        // Real-time broadcast to posts topic
+        Map<String, Object> event = new HashMap<>();
+        event.put("type", "POST_COMMENTED");
+        event.put("postId", id);
+        event.put("comment", commentDto);
+        event.put("commentsCount", post.getCommentsCount());
+        messagingTemplate.convertAndSend("/topic/posts", event);
+
+        // Notify post author if someone else commented
+        if (!post.getAuthorId().equals(me.getId())) {
+            Map<String, Object> notif = new HashMap<>();
+            notif.put("type", "POST_COMMENT_NOTIFICATION");
+            notif.put("postId", id);
+            notif.put("actor", new UserDto(me));
+            notif.put("title", (me.getDisplayName() != null ? me.getDisplayName() : me.getUsername()) + " commented on your post");
+            notif.put("snippet", comment.getContent().length() > 50 ? comment.getContent().substring(0, 50) + "..." : comment.getContent());
+            messagingTemplate.convertAndSend("/topic/user." + post.getAuthorId() + ".notifications", notif);
+        }
+
+        return ResponseEntity.ok(commentDto);
     }
 
-    @DeleteMapping("/{id}")
+    @Transactional
+    @RequestMapping(value = "/{id}", method = {RequestMethod.DELETE, RequestMethod.POST})
     public ResponseEntity<?> deletePost(@PathVariable Long id, Authentication auth) {
+        return performDeletePost(id, auth);
+    }
+
+    @Transactional
+    @PostMapping("/{id}/delete")
+    public ResponseEntity<?> deletePostAlias(@PathVariable Long id, Authentication auth) {
+        return performDeletePost(id, auth);
+    }
+
+    private ResponseEntity<?> performDeletePost(Long id, Authentication auth) {
         User me = currentUser(auth);
         Post post = postRepository.findById(id).orElse(null);
         if (post == null) {
@@ -200,7 +272,15 @@ public class PostController {
             return ResponseEntity.status(403).body(Map.of("error", "Unauthorized to delete this post"));
         }
 
+        postCommentRepository.deleteAll(postCommentRepository.findByPostIdOrderByCreatedAtAsc(id));
+        postLikeRepository.deleteAll(postLikeRepository.findAll().stream().filter(l -> l.getPostId().equals(id)).collect(Collectors.toList()));
         postRepository.delete(post);
+
+        Map<String, Object> event = new HashMap<>();
+        event.put("type", "POST_DELETED");
+        event.put("postId", id);
+        messagingTemplate.convertAndSend("/topic/posts", event);
+
         return ResponseEntity.ok(Map.of("success", true, "deletedPostId", id));
     }
 }

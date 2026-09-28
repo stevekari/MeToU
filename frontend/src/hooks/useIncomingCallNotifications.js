@@ -8,11 +8,12 @@ import { setUserStatus, setUserStatuses, setTyping, clearTyping } from '../store
 import { updateMessage, markMessagesAsReadInConv } from '../store/slices/chatSlice';
 import { callSounds } from '../utils/callSounds';
 
-export function useIncomingCallNotifications(userId, onMessage) {
+export function useIncomingCallNotifications(userId, onMessage, toast) {
   const dispatch = useDispatch();
   const myStatus = useSelector((state) => state.presence?.myStatus || 'online');
   const clientRef = useRef(null);
   const onMessageRef = useRef(onMessage);
+  const toastRef = useRef(toast);
   const subscriptionsRef = useRef(new Map());
   const [incomingCall, setIncomingCall] = useState(null);
   const [conversations, setConversations] = useState([]);
@@ -20,6 +21,10 @@ export function useIncomingCallNotifications(userId, onMessage) {
   useEffect(() => {
     onMessageRef.current = onMessage;
   }, [onMessage]);
+
+  useEffect(() => {
+    toastRef.current = toast;
+  }, [toast]);
 
   useEffect(() => {
     if (!userId) return undefined;
@@ -235,6 +240,55 @@ export function useIncomingCallNotifications(userId, onMessage) {
             }
           } catch (err) {
             console.warn('User typing update error', err);
+          }
+        });
+
+        // Global posts topic for live new post toast popups
+        client.subscribe('/topic/posts', (frame) => {
+          try {
+            const data = JSON.parse(frame.body);
+            if (data && data.type === 'NEW_POST') {
+              const postAuthorId = data.post?.author?.id || data.author?.id;
+              // Only notify if post was made by someone else
+              if (String(postAuthorId) !== String(userId)) {
+                toastRef.current?.post?.({
+                  post: data.post,
+                  author: data.author,
+                  title: data.title || 'New Post Shared',
+                  snippet: data.snippet || data.post?.content,
+                });
+              }
+            }
+          } catch (err) {
+            console.warn('Posts topic error', err);
+          }
+        });
+
+        // User personal notifications topic (Likes & Comments on my posts)
+        client.subscribe(`/topic/user.${userId}.notifications`, (frame) => {
+          try {
+            const data = JSON.parse(frame.body);
+            if (data && data.type === 'POST_LIKED_NOTIFICATION') {
+              toastRef.current?.show?.({
+                type: 'like',
+                icon: '❤️',
+                title: data.title || 'Someone liked your post',
+                snippet: data.snippet,
+                postId: data.postId,
+                duration: 6000,
+              });
+            } else if (data && data.type === 'POST_COMMENT_NOTIFICATION') {
+              toastRef.current?.show?.({
+                type: 'comment',
+                icon: '💬',
+                title: data.title || 'New comment on your post',
+                snippet: data.snippet,
+                postId: data.postId,
+                duration: 6000,
+              });
+            }
+          } catch (err) {
+            console.warn('User notification update error', err);
           }
         });
 

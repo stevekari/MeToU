@@ -3,9 +3,11 @@ import { Link } from 'react-router-dom';
 import { getFeedPosts, createPost, toggleLikePost, getPostComments, addPostComment } from '../api/postApi';
 import { uploadMedia } from '../api/mediaApi';
 import { resolveAvatarUrl } from '../utils/avatarUrl';
+import { useToast } from '../contexts/ToastContext';
 import '../styles/feed.css';
 
 export default function FeedWidget({ user, compact = false }) {
+  const { toast } = useToast();
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -47,8 +49,9 @@ export default function FeedWidget({ user, compact = false }) {
       setUploadingImage(true);
       const res = await uploadMedia(file, 'image');
       setMediaUrl(res.url);
+      toast.success('Image attached to post', 'Media Uploaded');
     } catch (err) {
-      alert('Failed to upload image');
+      toast.error('Failed to upload image. Please try again.');
     } finally {
       setUploadingImage(false);
     }
@@ -79,8 +82,9 @@ export default function FeedWidget({ user, compact = false }) {
       setJobTitle('');
       setJobCompany('');
       setPostType('STANDARD');
+      toast.success('Your post is now visible on the feed!', 'Post Published');
     } catch (err) {
-      alert('Failed to create post');
+      toast.error('Failed to create post. Please try again.');
     } finally {
       setIsSubmitting(false);
     }

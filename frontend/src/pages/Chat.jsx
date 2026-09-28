@@ -28,6 +28,7 @@ import CallPanel from '../components/CallPanel';
 import { useDispatch, useSelector } from 'react-redux';
 import { setActiveConversation, setMessages as setStoreMessages, addMessage as addStoreMessage, updateMessage as updateStoreMessage } from '../store/slices/chatSlice';
 import { setUserStatuses } from '../store/slices/presenceSlice';
+import { useToast } from '../contexts/ToastContext';
 
 export default function Chat({ currentUserId }) {
   const { conversationId } = useParams();
@@ -35,6 +36,7 @@ export default function Chat({ currentUserId }) {
   const navigate = useNavigate();
   const selectedFriend = location.state?.friend;
   const { t } = useLanguage();
+  const { toast } = useToast();
   const dispatch = useDispatch();
 
   useEffect(() => {
@@ -439,8 +441,9 @@ export default function Chat({ currentUserId }) {
       await clearConversationMessages(conversationId);
       setMessages([]);
       dispatch(setStoreMessages({ conversationId, messages: [] }));
+      toast.delete('All chat messages have been cleared.', 'Chat Cleared');
     } catch (err) {
-      alert('Failed to clear messages');
+      toast.error('Failed to clear messages. Please try again.');
     }
   };
 
@@ -448,9 +451,10 @@ export default function Chat({ currentUserId }) {
     if (!window.confirm('Are you sure you want to delete this chat conversation? This will delete all messages.')) return;
     try {
       await deleteConversation(conversationId);
+      toast.delete('Conversation and messages removed.', 'Conversation Deleted');
       navigate('/friends');
     } catch (err) {
-      alert('Failed to delete conversation');
+      toast.error('Failed to delete conversation. Please try again.');
     }
   };
 
@@ -460,8 +464,9 @@ export default function Chat({ currentUserId }) {
       await blockUser(conversationId);
       setConversationStatus('BLOCKED');
       setConversationInitiatorId(currentUserId);
+      toast.block(`${friendDisplayName || 'Contact'} has been blocked.`, 'User Blocked');
     } catch (err) {
-      alert('Failed to block user');
+      toast.error('Failed to block user. Please try again.');
     }
   };
 
@@ -470,8 +475,9 @@ export default function Chat({ currentUserId }) {
       await unblockUser(conversationId);
       setConversationStatus('ACCEPTED');
       setConversationInitiatorId(null);
+      toast.unblock(`${friendDisplayName || 'Contact'} has been unblocked.`, 'User Unblocked');
     } catch (err) {
-      alert('Failed to unblock user');
+      toast.error('Failed to unblock user. Please try again.');
     }
   };
 
