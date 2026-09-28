@@ -143,7 +143,7 @@ export default function FeedWidget({ user, compact = false }) {
       }));
       setPosts(posts.map((p) => (p.id === postId ? { ...p, commentsCount: (p.commentsCount || 0) + 1 } : p)));
     } catch (err) {
-      alert('Failed to post comment');
+      toast.error('Failed to post comment. Please try again.');
     }
   };
 
@@ -387,7 +387,7 @@ export default function FeedWidget({ user, compact = false }) {
                     onClick={() => {
                       if (navigator.clipboard) {
                         navigator.clipboard.writeText(`${window.location.origin}/profile/${post.authorId}`);
-                        alert('Link copied to clipboard!');
+                        toast.success('Link copied to clipboard!', 'Share Link');
                       }
                     }}
                   >

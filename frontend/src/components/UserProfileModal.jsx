@@ -142,7 +142,14 @@ export default function UserProfileModal({ user, userId, onClose, onStartCall })
 
   const handleBlock = async () => {
     if (!relationship.conversationId) return;
-    if (!window.confirm(`Are you sure you want to block ${displayName}?`)) return;
+    const confirmed = await toast.confirm({
+      title: 'Block Contact?',
+      message: `Are you sure you want to block ${displayName}? You will not receive any calls or messages from them.`,
+      confirmText: 'Block User',
+      icon: '🔒',
+      danger: true,
+    });
+    if (!confirmed) return;
     try {
       setRelLoading(true);
       await blockUser(relationship.conversationId);
@@ -171,7 +178,14 @@ export default function UserProfileModal({ user, userId, onClose, onStartCall })
 
   const handleDeleteConversation = async () => {
     if (!relationship.conversationId) return;
-    if (!window.confirm(`Are you sure you want to delete this conversation with ${displayName}?`)) return;
+    const confirmed = await toast.confirm({
+      title: 'Delete Conversation?',
+      message: `Are you sure you want to delete this chat conversation with ${displayName}? This will delete all messages permanently.`,
+      confirmText: 'Delete Chat',
+      icon: '🗑️',
+      danger: true,
+    });
+    if (!confirmed) return;
     try {
       setRelLoading(true);
       await deleteConversation(relationship.conversationId);

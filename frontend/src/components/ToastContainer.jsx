@@ -4,7 +4,7 @@ import { useToast } from '../contexts/ToastContext';
 import { togglePostLike } from '../api/postApi';
 
 export default function ToastContainer() {
-  const { toasts, removeToast } = useToast();
+  const { toasts, removeToast, handleConfirmAction } = useToast();
   const navigate = useNavigate();
   const [likedPosts, setLikedPosts] = useState({});
   const [likingMap, setLikingMap] = useState({});
@@ -32,11 +32,7 @@ export default function ToastContainer() {
 
   const handleViewPost = (toast) => {
     removeToast(toast.id);
-    if (toast.post?.authorId || toast.author?.id) {
-      navigate('/feed');
-    } else {
-      navigate('/feed');
-    }
+    navigate('/feed');
   };
 
   const handleQuickComment = (e, toast) => {
@@ -50,6 +46,7 @@ export default function ToastContainer() {
       {toasts.map((item) => {
         const isPost = item.type === 'post';
         const isSocial = item.type === 'post' || item.type === 'like' || item.type === 'comment';
+        const isConfirm = item.type === 'confirm';
         const postId = item.post?.id || item.postId;
         const isLiked = likedPosts[postId] || item.post?.isLikedByMe;
 
@@ -62,6 +59,7 @@ export default function ToastContainer() {
               ...(item.type === 'block' ? blockToastStyle : {}),
               ...(item.type === 'success' ? successToastStyle : {}),
               ...(isSocial ? socialToastStyle : {}),
+              ...(isConfirm ? confirmToastStyle : {}),
             }}
             className="gio-toast-item"
             role="alert"
@@ -78,20 +76,21 @@ export default function ToastContainer() {
                   />
                 ) : (
                   <span style={iconBadgeStyle(item.type)}>
-                    {item.icon || (item.type === 'delete' ? '🗑️' : item.type === 'block' ? '🔒' : item.type === 'success' ? '✅' : '✨')}
+                    {item.icon || (item.type === 'delete' ? '🗑️' : item.type === 'block' ? '🔒' : item.type === 'success' ? '✅' : isConfirm ? '⚠️' : '✨')}
                   </span>
                 )}
                 <div>
                   <div style={titleStyle}>
-                    {item.title || (item.type === 'delete' ? 'Item Deleted' : 'Notification')}
+                    {item.title || (isConfirm ? 'Confirmation Required' : item.type === 'delete' ? 'Item Deleted' : 'Notification')}
                   </div>
                   {isSocial && <div style={metaSubtextStyle}>Just now • GioFeed</div>}
+                  {isConfirm && <div style={metaSubtextStyle}>Action cannot be undone</div>}
                 </div>
               </div>
 
               <button
                 type="button"
-                onClick={() => removeToast(item.id)}
+                onClick={() => isConfirm ? handleConfirmAction(item.id, false) : removeToast(item.id)}
                 style={closeBtnStyle}
                 aria-label="Close notification"
               >
@@ -103,6 +102,32 @@ export default function ToastContainer() {
             {(item.message || item.snippet) && (
               <div style={messageStyle}>
                 {item.message || item.snippet}
+              </div>
+            )}
+
+            {/* Interactive Confirm Action Buttons */}
+            {isConfirm && (
+              <div style={confirmButtonsRowStyle}>
+                <button
+                  type="button"
+                  onClick={() => handleConfirmAction(item.id, false)}
+                  style={cancelConfirmBtnStyle}
+                >
+                  {item.cancelText || 'Cancel'}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => handleConfirmAction(item.id, true)}
+                  style={{
+                    ...confirmActionButtonStyle,
+                    backgroundColor: item.danger ? '#ef4444' : 'var(--primary, #10b981)',
+                    boxShadow: item.danger ? '0 4px 14px rgba(239, 68, 68, 0.4)' : '0 4px 14px rgba(16, 185, 129, 0.4)',
+                  }}
+                >
+                  <span>{item.icon || (item.danger ? '🗑️' : '✓')}</span>
+                  <span>{item.confirmText || 'Yes, Delete'}</span>
+                </button>
               </div>
             )}
 
@@ -187,19 +212,19 @@ const containerStyle = {
   flexDirection: 'column',
   gap: '10px',
   width: '92%',
-  maxWidth: '460px',
+  maxWidth: '480px',
   pointerEvents: 'none',
 };
 
 const toastBaseStyle = {
   pointerEvents: 'auto',
   background: 'rgba(24, 26, 32, 0.94)',
-  backdropFilter: 'blur(16px)',
-  WebkitBackdropFilter: 'blur(16px)',
+  backdropFilter: 'blur(18px)',
+  WebkitBackdropFilter: 'blur(18px)',
   border: '1px solid rgba(255, 255, 255, 0.12)',
   borderRadius: '16px',
-  padding: '12px 16px',
-  boxShadow: '0 12px 36px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(255, 255, 255, 0.08)',
+  padding: '14px 18px',
+  boxShadow: '0 16px 40px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(255, 255, 255, 0.08)',
   color: '#f3f4f6',
   animation: 'gioToastSlideDown 0.35s cubic-bezier(0.16, 1, 0.3, 1)',
   transition: 'all 0.3s ease',
@@ -208,22 +233,28 @@ const toastBaseStyle = {
 
 const deleteToastStyle = {
   borderLeft: '4px solid #ef4444',
-  background: 'rgba(28, 20, 22, 0.95)',
+  background: 'rgba(28, 20, 22, 0.96)',
 };
 
 const blockToastStyle = {
   borderLeft: '4px solid #f59e0b',
-  background: 'rgba(28, 24, 18, 0.95)',
+  background: 'rgba(28, 24, 18, 0.96)',
 };
 
 const successToastStyle = {
   borderLeft: '4px solid #10b981',
-  background: 'rgba(18, 28, 24, 0.95)',
+  background: 'rgba(18, 28, 24, 0.96)',
 };
 
 const socialToastStyle = {
   borderLeft: '4px solid #3b82f6',
   background: 'rgba(20, 24, 34, 0.96)',
+};
+
+const confirmToastStyle = {
+  borderLeft: '4px solid #ef4444',
+  background: 'rgba(30, 20, 24, 0.97)',
+  boxShadow: '0 20px 48px rgba(0, 0, 0, 0.65), 0 0 0 1px rgba(239, 68, 68, 0.25)',
 };
 
 const toastHeaderRowStyle = {
@@ -241,8 +272,8 @@ const toastLeftInfoStyle = {
 };
 
 const avatarStyle = {
-  width: '34px',
-  height: '34px',
+  width: '36px',
+  height: '36px',
   borderRadius: '50%',
   objectFit: 'cover',
   border: '2px solid rgba(255, 255, 255, 0.2)',
@@ -253,22 +284,22 @@ const iconBadgeStyle = (type) => ({
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
-  width: '32px',
-  height: '32px',
+  width: '34px',
+  height: '34px',
   borderRadius: '10px',
   background:
-    type === 'delete'
-      ? 'rgba(239, 68, 68, 0.18)'
+    type === 'delete' || type === 'confirm'
+      ? 'rgba(239, 68, 68, 0.2)'
       : type === 'block'
-      ? 'rgba(245, 158, 11, 0.18)'
+      ? 'rgba(245, 158, 11, 0.2)'
       : type === 'success'
-      ? 'rgba(16, 185, 129, 0.18)'
-      : 'rgba(59, 130, 246, 0.18)',
+      ? 'rgba(16, 185, 129, 0.2)'
+      : 'rgba(59, 130, 246, 0.2)',
 });
 
 const titleStyle = {
   fontWeight: 600,
-  fontSize: '14px',
+  fontSize: '14.5px',
   color: '#ffffff',
   lineHeight: 1.25,
 };
@@ -291,11 +322,47 @@ const closeBtnStyle = {
 };
 
 const messageStyle = {
-  marginTop: '6px',
+  marginTop: '8px',
   color: '#e5e7eb',
-  fontSize: '13px',
+  fontSize: '13.5px',
   lineHeight: 1.45,
   wordBreak: 'break-word',
+};
+
+const confirmButtonsRowStyle = {
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'flex-end',
+  gap: '10px',
+  marginTop: '14px',
+  paddingTop: '10px',
+  borderTop: '1px solid rgba(255, 255, 255, 0.1)',
+};
+
+const cancelConfirmBtnStyle = {
+  padding: '7px 14px',
+  borderRadius: '8px',
+  border: '1px solid rgba(255, 255, 255, 0.18)',
+  background: 'rgba(255, 255, 255, 0.08)',
+  color: '#d1d5db',
+  fontSize: '13px',
+  fontWeight: 500,
+  cursor: 'pointer',
+  transition: 'all 0.15s ease',
+};
+
+const confirmActionButtonStyle = {
+  display: 'inline-flex',
+  alignItems: 'center',
+  gap: '6px',
+  padding: '7px 16px',
+  borderRadius: '8px',
+  border: 'none',
+  color: '#ffffff',
+  fontSize: '13px',
+  fontWeight: 600,
+  cursor: 'pointer',
+  transition: 'all 0.15s ease',
 };
 
 const actionButtonsRowStyle = {

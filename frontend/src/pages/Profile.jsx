@@ -5,10 +5,12 @@ import { getUserPosts, toggleLikePost } from '../api/postApi';
 import { toggleConnectUser } from '../api/networkApi';
 import { uploadMedia } from '../api/mediaApi';
 import { resolveAvatarUrl } from '../utils/avatarUrl';
+import { useToast } from '../contexts/ToastContext';
 import '../styles/profile.css';
 import '../styles/feed.css';
 
 export default function Profile({ user: currentUser, onProfileUpdate }) {
+  const { toast } = useToast();
   const { userId } = useParams();
   const navigate = useNavigate();
   const targetId = userId || currentUser?.userId || currentUser?.id;
@@ -94,8 +96,9 @@ export default function Profile({ user: currentUser, onProfileUpdate }) {
       setProfile(updated);
       if (onProfileUpdate) onProfileUpdate(updated);
       setIsEditModalOpen(false);
+      toast.success('Your profile has been updated.', 'Profile Saved');
     } catch (err) {
-      alert('Failed to save profile changes');
+      toast.error('Failed to save profile changes. Please try again.');
     } finally {
       setIsSaving(false);
     }
@@ -114,8 +117,9 @@ export default function Profile({ user: currentUser, onProfileUpdate }) {
       });
       setProfile(updated);
       if (onProfileUpdate) onProfileUpdate(updated);
+      toast.success('Cover banner updated.', 'Banner Uploaded');
     } catch (err) {
-      alert('Failed to upload banner');
+      toast.error('Failed to upload banner');
     }
   };
 

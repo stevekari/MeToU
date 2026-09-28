@@ -4,9 +4,11 @@ import { getFeedPosts, createPost, toggleLikePost, getPostComments, addPostComme
 import { getNetworkSuggestions, toggleConnectUser } from '../api/networkApi';
 import { uploadMedia } from '../api/mediaApi';
 import { resolveAvatarUrl } from '../utils/avatarUrl';
+import { useToast } from '../contexts/ToastContext';
 import '../styles/feed.css';
 
 export default function Feed({ user }) {
+  const { toast } = useToast();
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [suggestions, setSuggestions] = useState([]);
@@ -59,8 +61,9 @@ export default function Feed({ user }) {
       setUploadingImage(true);
       const res = await uploadMedia(file, 'image');
       setMediaUrl(res.url);
+      toast.success('Image attached to post', 'Media Uploaded');
     } catch (err) {
-      alert('Failed to upload image');
+      toast.error('Failed to upload image. Please try again.');
     } finally {
       setUploadingImage(false);
     }
@@ -91,8 +94,9 @@ export default function Feed({ user }) {
       setJobTitle('');
       setJobCompany('');
       setPostType('STANDARD');
+      toast.success('Your post is now visible on the feed!', 'Post Published');
     } catch (err) {
-      alert('Failed to create post');
+      toast.error('Failed to create post. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
@@ -151,7 +155,7 @@ export default function Feed({ user }) {
       }));
       setPosts(posts.map((p) => (p.id === postId ? { ...p, commentsCount: (p.commentsCount || 0) + 1 } : p)));
     } catch (err) {
-      alert('Failed to post comment');
+      toast.error('Failed to post comment. Please try again.');
     }
   };
 
@@ -436,7 +440,7 @@ export default function Feed({ user }) {
                     onClick={() => {
                       if (navigator.clipboard) {
                         navigator.clipboard.writeText(window.location.origin + `/profile/${post.authorId}`);
-                        alert('Link copied to clipboard!');
+                        toast.success('Link copied to clipboard!', 'Share Link');
                       }
                     }}
                   >

@@ -436,7 +436,14 @@ export default function Chat({ currentUserId }) {
   };
 
   const handleClearChat = async () => {
-    if (!window.confirm('Are you sure you want to clear all messages in this conversation?')) return;
+    const confirmed = await toast.confirm({
+      title: 'Clear Chat Messages?',
+      message: 'Are you sure you want to clear all messages in this conversation?',
+      confirmText: 'Clear Messages',
+      icon: '🧹',
+      danger: true,
+    });
+    if (!confirmed) return;
     try {
       await clearConversationMessages(conversationId);
       setMessages([]);
@@ -448,7 +455,14 @@ export default function Chat({ currentUserId }) {
   };
 
   const handleDeleteChat = async () => {
-    if (!window.confirm('Are you sure you want to delete this chat conversation? This will delete all messages.')) return;
+    const confirmed = await toast.confirm({
+      title: 'Delete Conversation?',
+      message: 'Are you sure you want to delete this chat conversation? This will delete all messages permanently.',
+      confirmText: 'Delete Chat',
+      icon: '🗑️',
+      danger: true,
+    });
+    if (!confirmed) return;
     try {
       await deleteConversation(conversationId);
       toast.delete('Conversation and messages removed.', 'Conversation Deleted');
@@ -459,7 +473,14 @@ export default function Chat({ currentUserId }) {
   };
 
   const handleBlockUser = async () => {
-    if (!window.confirm(`Are you sure you want to block ${friendDisplayName || 'this user'}? You will not receive any messages or calls from them.`)) return;
+    const confirmed = await toast.confirm({
+      title: 'Block Contact?',
+      message: `Are you sure you want to block ${friendDisplayName || 'this user'}? You will not receive any messages or calls from them.`,
+      confirmText: 'Block User',
+      icon: '🔒',
+      danger: true,
+    });
+    if (!confirmed) return;
     try {
       await blockUser(conversationId);
       setConversationStatus('BLOCKED');
