@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import chatImg from '../assets/chat.jpeg';
@@ -15,6 +16,11 @@ export default function Navbar({ user, onLogout }) {
   const { language, setLanguage, languageOptions, t } = useLanguage();
   const { isStandalone, installApp } = usePWAInstall();
   const myStatus = useSelector((state) => state.presence?.myStatus || 'online');
+  const conversations = useSelector((state) => state.chat?.conversations || {});
+
+  const totalUnread = useMemo(() => {
+    return Object.values(conversations).reduce((sum, conv) => sum + (conv.unread || 0), 0);
+  }, [conversations]);
 
   const handleLogout = () => {
     onLogout();
@@ -47,9 +53,16 @@ export default function Navbar({ user, onLogout }) {
             Home
           </Link>
 
-          <Link to="/friends" className={`nav-desktop-only ${isFriends ? 'active-nav-link' : ''}`}>
-            <i className="fa-solid fa-comments" style={{ marginRight: '6px' }}></i>
-            {t('chats')}
+          <Link to="/friends" className={`nav-desktop-only nav-chat-link ${isFriends ? 'active-nav-link' : ''}`}>
+            <span className="nav-icon-wrap" style={{ position: 'relative', display: 'inline-flex', alignItems: 'center' }}>
+              <i className="fa-solid fa-comments"></i>
+              {totalUnread > 0 && (
+                <span className="navbar-unread-badge">
+                  {totalUnread > 99 ? '99+' : totalUnread}
+                </span>
+              )}
+            </span>
+            <span style={{ marginLeft: '6px' }}>{t('chats')}</span>
           </Link>
 
           <Link to="/calls" className={`nav-desktop-only ${isCalls ? 'active-nav-link' : ''}`}>
