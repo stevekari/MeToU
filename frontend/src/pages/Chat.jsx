@@ -8,6 +8,10 @@ import {
   acceptChatRequest,
   declineChatRequest,
   resendChatRequest,
+  deleteConversation,
+  clearConversationMessages,
+  blockUser,
+  unblockUser,
 } from '../api/conversationApi';
 import { searchUsers, getPresenceMap } from '../api/userApi';
 import { useWebSocket } from '../hooks/useWebSocket';
@@ -54,6 +58,7 @@ export default function Chat({ currentUserId }) {
   const [replyingTo, setReplyingTo] = useState(null);
   const [editingMessage, setEditingMessage] = useState(null);
   const [selectedProfileUser, setSelectedProfileUser] = useState(null);
+  const [showChatMenu, setShowChatMenu] = useState(false);
 
   const messagesEndRef = useRef(null);
 
@@ -120,6 +125,22 @@ export default function Chat({ currentUserId }) {
       if (message.initiatorId != null) {
         setConversationInitiatorId(message.initiatorId);
       }
+    }
+    if (message.type === 'CONVERSATION_BLOCKED' || message.status === 'BLOCKED') {
+      setConversationStatus('BLOCKED');
+      if (message.blockedById != null) {
+        setConversationInitiatorId(message.blockedById);
+      }
+    }
+    if (message.type === 'CONVERSATION_UNBLOCKED') {
+      setConversationStatus('ACCEPTED');
+      setConversationInitiatorId(null);
+    }
+    if (message.type === 'CONVERSATION_CLEARED') {
+      setMessages([]);
+    }
+    if (message.type === 'CONVERSATION_DELETED') {
+      navigate('/friends');
     }
 
     if (message.content) {
@@ -412,6 +433,48 @@ export default function Chat({ currentUserId }) {
     }
   };
 
+  const handleClearChat = async () => {
+    if (!window.confirm('Are you sure you want to clear all messages in this conversation?')) return;
+    try {
+      await clearConversationMessages(conversationId);
+      setMessages([]);
+      dispatch(setStoreMessages({ conversationId, messages: [] }));
+    } catch (err) {
+      alert('Failed to clear messages');
+    }
+  };
+
+  const handleDeleteChat = async () => {
+    if (!window.confirm('Are you sure you want to delete this chat conversation? This will delete all messages.')) return;
+    try {
+      await deleteConversation(conversationId);
+      navigate('/friends');
+    } catch (err) {
+      alert('Failed to delete conversation');
+    }
+  };
+
+  const handleBlockUser = async () => {
+    if (!window.confirm(`Are you sure you want to block ${friendDisplayName || 'this user'}? You will not receive any messages or calls from them.`)) return;
+    try {
+      await blockUser(conversationId);
+      setConversationStatus('BLOCKED');
+      setConversationInitiatorId(currentUserId);
+    } catch (err) {
+      alert('Failed to block user');
+    }
+  };
+
+  const handleUnblockUser = async () => {
+    try {
+      await unblockUser(conversationId);
+      setConversationStatus('ACCEPTED');
+      setConversationInitiatorId(null);
+    } catch (err) {
+      alert('Failed to unblock user');
+    }
+  };
+
 
   useEffect(() => {
     setLoading(true);
@@ -470,11 +533,13 @@ export default function Chat({ currentUserId }) {
 
   const friendDisplayName = friend?.displayName || friend?.username || 'User';
 
+  const isBlocked = conversationStatus === 'BLOCKED';
   const isPending = conversationStatus === 'PENDING';
   const isDeclined = conversationStatus === 'DECLINED';
-  const isAccepted = conversationStatus === 'ACCEPTED' || (!isPending && !isDeclined);
+  const isAccepted = conversationStatus === 'ACCEPTED' && !isBlocked;
   const isInitiator = conversationInitiatorId != null && effectiveCurrentUserId != null && String(conversationInitiatorId) === String(effectiveCurrentUserId);
   const isRecipient = isPending && (!isInitiator || (conversationInitiatorId != null && String(conversationInitiatorId) !== String(effectiveCurrentUserId)));
+  const isBlocker = isBlocked && (conversationInitiatorId == null || String(conversationInitiatorId) === String(effectiveCurrentUserId));
 
   return (
     <div className="chat-layout-page">
@@ -621,6 +686,164 @@ export default function Chat({ currentUserId }) {
                 >
                   <i className="fa-solid fa-video"></i>
                 </button>
+
+                <div style={{ position: 'relative' }}>
+                  <button
+                    type="button"
+                    className="chat-menu-trigger-btn"
+                    onClick={() => setShowChatMenu(!showChatMenu)}
+                    title="Chat Options"
+                    aria-label="Chat Options"
+                    style={{
+                      background: 'transparent',
+                      border: 'none',
+                      color: 'var(--text-muted, #94a3b8)',
+                      fontSize: '1.1rem',
+                      cursor: 'pointer',
+                      padding: '8px 10px',
+                      borderRadius: '8px'
+                    }}
+                  >
+                    <i className="fa-solid fa-ellipsis-vertical"></i>
+                  </button>
+
+                  {showChatMenu && (
+                    <div
+                      className="chat-dropdown-menu"
+                      style={{
+                        position: 'absolute',
+                        right: 0,
+                        top: '100%',
+                        marginTop: '6px',
+                        background: 'var(--bg-card, #1e2430)',
+                        border: '1px solid var(--border-color, rgba(255,255,255,0.1))',
+                        borderRadius: '12px',
+                        boxShadow: '0 8px 24px rgba(0,0,0,0.4)',
+                        zIndex: 50,
+                        minWidth: '190px',
+                        overflow: 'hidden'
+                      }}
+                    >
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowChatMenu(false);
+                          setSelectedProfileUser(friend);
+                        }}
+                        style={{
+                          width: '100%',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '8px',
+                          padding: '10px 14px',
+                          background: 'none',
+                          border: 'none',
+                          color: 'var(--text-main, #fff)',
+                          fontSize: '0.85rem',
+                          cursor: 'pointer',
+                          textAlign: 'left'
+                        }}
+                      >
+                        <i className="fa-solid fa-user" style={{ color: '#10b981' }}></i> View Profile & Posts
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowChatMenu(false);
+                          handleClearChat();
+                        }}
+                        style={{
+                          width: '100%',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '8px',
+                          padding: '10px 14px',
+                          background: 'none',
+                          border: 'none',
+                          color: 'var(--text-main, #fff)',
+                          fontSize: '0.85rem',
+                          cursor: 'pointer',
+                          textAlign: 'left'
+                        }}
+                      >
+                        <i className="fa-solid fa-broom" style={{ color: '#f59e0b' }}></i> Clear Chat History
+                      </button>
+
+                      {isBlocked && isBlocker ? (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setShowChatMenu(false);
+                            handleUnblockUser();
+                          }}
+                          style={{
+                            width: '100%',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '8px',
+                            padding: '10px 14px',
+                            background: 'none',
+                            border: 'none',
+                            color: '#10b981',
+                            fontSize: '0.85rem',
+                            cursor: 'pointer',
+                            textAlign: 'left'
+                          }}
+                        >
+                          <i className="fa-solid fa-unlock"></i> Unblock Contact
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setShowChatMenu(false);
+                            handleBlockUser();
+                          }}
+                          style={{
+                            width: '100%',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '8px',
+                            padding: '10px 14px',
+                            background: 'none',
+                            border: 'none',
+                            color: '#ef4444',
+                            fontSize: '0.85rem',
+                            cursor: 'pointer',
+                            textAlign: 'left'
+                          }}
+                        >
+                          <i className="fa-solid fa-ban"></i> Block Contact
+                        </button>
+                      )}
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowChatMenu(false);
+                          handleDeleteChat();
+                        }}
+                        style={{
+                          width: '100%',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '8px',
+                          padding: '10px 14px',
+                          background: 'none',
+                          border: 'none',
+                          color: '#ef4444',
+                          fontSize: '0.85rem',
+                          cursor: 'pointer',
+                          textAlign: 'left',
+                          borderTop: '1px solid var(--border-color, rgba(255,255,255,0.06))'
+                        }}
+                      >
+                        <i className="fa-solid fa-trash-can"></i> Delete Conversation
+                      </button>
+                    </div>
+                  )}
+                </div>
               </div>
             </>
           )}
@@ -846,6 +1069,59 @@ export default function Chat({ currentUserId }) {
           </div>
         )}
 
+        {isBlocked && (
+          <div
+            className="chat-request-bar"
+            style={{
+              background: isBlocker ? 'rgba(239, 68, 68, 0.12)' : 'rgba(100, 116, 139, 0.15)',
+              border: `1px solid ${isBlocker ? 'rgba(239, 68, 68, 0.3)' : 'rgba(100, 116, 139, 0.3)'}`,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: '12px',
+              padding: '12px 16px',
+              borderRadius: '10px',
+              margin: '10px 16px',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <i className={`fa-solid ${isBlocker ? 'fa-ban' : 'fa-lock'}`} style={{ color: isBlocker ? '#ef4444' : '#94a3b8', fontSize: '1.2rem' }}></i>
+              <div style={{ display: 'flex', flexDirection: 'column' }}>
+                <strong style={{ color: isBlocker ? '#ef4444' : 'var(--text-main, #fff)', fontSize: '0.9rem' }}>
+                  {isBlocker ? 'Contact Blocked' : 'Messaging Unavailable'}
+                </strong>
+                <span style={{ fontSize: '0.82rem', color: 'var(--text-muted, #94a3b8)' }}>
+                  {isBlocker
+                    ? `You have blocked ${friendDisplayName}. You cannot send messages or place calls.`
+                    : 'You cannot send messages or place calls to this contact.'}
+                </span>
+              </div>
+            </div>
+
+            {isBlocker && (
+              <button
+                type="button"
+                onClick={handleUnblockUser}
+                style={{
+                  background: 'rgba(16, 185, 129, 0.15)',
+                  border: '1px solid rgba(16, 185, 129, 0.3)',
+                  color: '#10b981',
+                  borderRadius: '8px',
+                  padding: '6px 14px',
+                  fontWeight: 600,
+                  fontSize: '0.84rem',
+                  cursor: 'pointer',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                }}
+              >
+                <i className="fa-solid fa-unlock"></i> Unblock
+              </button>
+            )}
+          </div>
+        )}
+
         <CallPanel
           callState={call.callState}
           callType={call.callType}
@@ -871,9 +1147,11 @@ export default function Chat({ currentUserId }) {
           editingMessage={editingMessage}
           onSaveEdit={handleSaveEdit}
           onCancelEdit={() => setEditingMessage(null)}
-          disabled={!isAccepted && isRecipient ? true : isDeclined ? true : false}
+          disabled={isBlocked ? true : (!isAccepted && isRecipient ? true : isDeclined ? true : false)}
           disabledPlaceholder={
-            isRecipient
+            isBlocked
+              ? (isBlocker ? 'Unblock contact to send messages...' : 'Messaging is unavailable')
+              : isRecipient
               ? 'Accept chat request to send messages...'
               : isDeclined
               ? 'Chat request was declined'

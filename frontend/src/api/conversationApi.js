@@ -107,3 +107,23 @@ export function uploadMediaFile(file, kind = 'file') {
 export function getCalls() {
   return api.get('/conversations/calls').then((res) => Array.isArray(res.data) ? res.data : []).catch(() => []);
 }
+
+export function deleteConversation(conversationId) {
+  if (!conversationId) return Promise.resolve(null);
+  return api.delete(`/conversations/${conversationId}`).then((res) => res.data);
+}
+
+export function clearConversationMessages(conversationId) {
+  if (!conversationId) return Promise.resolve(null);
+  return api.delete(`/conversations/${conversationId}/messages`).then((res) => res.data);
+}
+
+export function blockUser(conversationId) {
+  if (!conversationId) return Promise.resolve(null);
+  return api.post(`/conversations/${conversationId}/block`).then((res) => res.data);
+}
+
+export function unblockUser(conversationId) {
+  if (!conversationId) return Promise.resolve(null);
+  return api.post(`/conversations/${conversationId}/unblock`).then((res) => res.data);
+}

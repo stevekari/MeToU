@@ -495,4 +495,113 @@ public class ConversationController {
 
         return callLogs;
     }
+
+    // Delete full conversation & all its messages
+    @DeleteMapping("/{id}")
+    public ResponseEntity<?> deleteConversation(@PathVariable Long id, Authentication auth) {
+        User me = currentUser(auth);
+        Conversation conv = conversationRepository.findById(id).orElse(null);
+        if (conv == null) {
+            return ResponseEntity.notFound().build();
+        }
+        if (!conv.getUserAId().equals(me.getId()) && !conv.getUserBId().equals(me.getId())) {
+            return ResponseEntity.status(403).body("Not part of this conversation");
+        }
+
+        // Delete all messages in the conversation
+        List<Message> msgs = messageRepository.findByConversationIdOrderByTimestampAsc(id);
+        messageRepository.deleteAll(msgs);
+
+        // Delete conversation entity
+        conversationRepository.delete(conv);
+
+        Map<String, Object> event = new HashMap<>();
+        event.put("type", "CONVERSATION_DELETED");
+        event.put("conversationId", id);
+        messagingTemplate.convertAndSend("/topic/conversation." + id, event);
+        messagingTemplate.convertAndSend("/topic/user." + conv.getUserAId() + ".conversations", event);
+        messagingTemplate.convertAndSend("/topic/user." + conv.getUserBId() + ".conversations", event);
+
+        return ResponseEntity.ok(Map.of("success", true, "deletedConversationId", id));
+    }
+
+    // Clear all messages in conversation (keep friendship)
+    @DeleteMapping("/{id}/messages")
+    public ResponseEntity<?> clearMessages(@PathVariable Long id, Authentication auth) {
+        User me = currentUser(auth);
+        Conversation conv = conversationRepository.findById(id).orElse(null);
+        if (conv == null) {
+            return ResponseEntity.notFound().build();
+        }
+        if (!conv.getUserAId().equals(me.getId()) && !conv.getUserBId().equals(me.getId())) {
+            return ResponseEntity.status(403).body("Not part of this conversation");
+        }
+
+        List<Message> msgs = messageRepository.findByConversationIdOrderByTimestampAsc(id);
+        messageRepository.deleteAll(msgs);
+
+        Map<String, Object> event = new HashMap<>();
+        event.put("type", "CONVERSATION_CLEARED");
+        event.put("conversationId", id);
+        messagingTemplate.convertAndSend("/topic/conversation." + id, event);
+        messagingTemplate.convertAndSend("/topic/user." + conv.getUserAId() + ".conversations", event);
+        messagingTemplate.convertAndSend("/topic/user." + conv.getUserBId() + ".conversations", event);
+
+        return ResponseEntity.ok(Map.of("success", true, "clearedConversationId", id));
+    }
+
+    // Block friend
+    @PostMapping("/{id}/block")
+    public ResponseEntity<?> blockUser(@PathVariable Long id, Authentication auth) {
+        User me = currentUser(auth);
+        Conversation conv = conversationRepository.findById(id).orElse(null);
+        if (conv == null) {
+            return ResponseEntity.notFound().build();
+        }
+        if (!conv.getUserAId().equals(me.getId()) && !conv.getUserBId().equals(me.getId())) {
+            return ResponseEntity.status(403).body("Not part of this conversation");
+        }
+
+        conv.setStatus("BLOCKED");
+        conv.setInitiatorId(me.getId()); // User who executed the block
+        conversationRepository.save(conv);
+
+        Map<String, Object> event = new HashMap<>();
+        event.put("type", "CONVERSATION_BLOCKED");
+        event.put("conversationId", id);
+        event.put("status", "BLOCKED");
+        event.put("blockedById", me.getId());
+        messagingTemplate.convertAndSend("/topic/conversation." + id, event);
+        messagingTemplate.convertAndSend("/topic/user." + conv.getUserAId() + ".conversations", event);
+        messagingTemplate.convertAndSend("/topic/user." + conv.getUserBId() + ".conversations", event);
+
+        return ResponseEntity.ok(Map.of("success", true, "status", "BLOCKED", "blockedById", me.getId(), "conversationId", id));
+    }
+
+    // Unblock friend
+    @PostMapping("/{id}/unblock")
+    public ResponseEntity<?> unblockUser(@PathVariable Long id, Authentication auth) {
+        User me = currentUser(auth);
+        Conversation conv = conversationRepository.findById(id).orElse(null);
+        if (conv == null) {
+            return ResponseEntity.notFound().build();
+        }
+        if (!conv.getUserAId().equals(me.getId()) && !conv.getUserBId().equals(me.getId())) {
+            return ResponseEntity.status(403).body("Not part of this conversation");
+        }
+
+        conv.setStatus("ACCEPTED");
+        conv.setInitiatorId(null);
+        conversationRepository.save(conv);
+
+        Map<String, Object> event = new HashMap<>();
+        event.put("type", "CONVERSATION_UNBLOCKED");
+        event.put("conversationId", id);
+        event.put("status", "ACCEPTED");
+        messagingTemplate.convertAndSend("/topic/conversation." + id, event);
+        messagingTemplate.convertAndSend("/topic/user." + conv.getUserAId() + ".conversations", event);
+        messagingTemplate.convertAndSend("/topic/user." + conv.getUserBId() + ".conversations", event);
+
+        return ResponseEntity.ok(Map.of("success", true, "status", "ACCEPTED", "conversationId", id));
+    }
 }

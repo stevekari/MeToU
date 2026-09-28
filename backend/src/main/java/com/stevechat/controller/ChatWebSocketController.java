@@ -63,6 +63,10 @@ public class ChatWebSocketController {
             throw new RuntimeException("Conversation was declined");
         }
 
+        if ("BLOCKED".equalsIgnoreCase(conv.getStatus())) {
+            throw new RuntimeException("User is blocked");
+        }
+
         // If recipient sends a message while status is PENDING, auto-accept
         if ("PENDING".equalsIgnoreCase(conv.getStatus()) && conv.getInitiatorId() != null && !conv.getInitiatorId().equals(senderId)) {
             conv.setStatus("ACCEPTED");
@@ -241,6 +245,10 @@ public class ChatWebSocketController {
                 .orElseThrow(() -> new RuntimeException("Conversation not found"));
         if (!conversation.getUserAId().equals(senderId) && !conversation.getUserBId().equals(senderId)) {
             throw new RuntimeException("Not part of this conversation");
+        }
+
+        if ("BLOCKED".equalsIgnoreCase(conversation.getStatus())) {
+            throw new RuntimeException("Cannot call blocked user");
         }
 
         signal.put("senderId", senderId);

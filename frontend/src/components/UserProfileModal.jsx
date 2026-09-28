@@ -9,6 +9,9 @@ import {
   getConversationWithUser,
   acceptChatRequest,
   declineChatRequest,
+  blockUser,
+  unblockUser,
+  deleteConversation,
 } from '../api/conversationApi';
 import { formatJoinedDate, formatLastSeenText } from '../utils/timeAgo';
 import { resolveAvatarUrl } from '../utils/avatarUrl';
@@ -133,6 +136,52 @@ export default function UserProfileModal({ user, userId, onClose, onStartCall })
   const handleViewFullProfile = () => {
     onClose();
     navigate(`/profile/${friendIdToUse}`);
+  };
+
+  const handleBlock = async () => {
+    if (!relationship.conversationId) return;
+    if (!window.confirm(`Are you sure you want to block ${displayName}?`)) return;
+    try {
+      setRelLoading(true);
+      await blockUser(relationship.conversationId);
+      setRelationship((prev) => ({ ...prev, status: 'BLOCKED' }));
+      setActionSuccessMsg('Contact blocked');
+      setTimeout(() => setActionSuccessMsg(''), 3000);
+    } catch (err) {
+      alert('Failed to block contact');
+    } finally {
+      setRelLoading(false);
+    }
+  };
+
+  const handleUnblock = async () => {
+    if (!relationship.conversationId) return;
+    try {
+      setRelLoading(true);
+      await unblockUser(relationship.conversationId);
+      setRelationship((prev) => ({ ...prev, status: 'ACCEPTED' }));
+      setActionSuccessMsg('Contact unblocked');
+      setTimeout(() => setActionSuccessMsg(''), 3000);
+    } catch (err) {
+      alert('Failed to unblock contact');
+    } finally {
+      setRelLoading(false);
+    }
+  };
+
+  const handleDeleteConversation = async () => {
+    if (!relationship.conversationId) return;
+    if (!window.confirm(`Are you sure you want to delete this conversation with ${displayName}?`)) return;
+    try {
+      setRelLoading(true);
+      await deleteConversation(relationship.conversationId);
+      onClose();
+      navigate('/friends');
+    } catch (err) {
+      alert('Failed to delete conversation');
+    } finally {
+      setRelLoading(false);
+    }
   };
 
   const handleLike = async (postId) => {
@@ -525,11 +574,71 @@ export default function UserProfileModal({ user, userId, onClose, onStartCall })
             </div>
           )}
 
+          {relationship.status === 'BLOCKED' && (
+            <div style={{ display: 'flex', flexDirection: 'column', width: '100%', gap: '8px', alignItems: 'center' }}>
+              <div style={{ fontSize: '0.82rem', color: '#ef4444' }}>
+                <i className="fa-solid fa-ban"></i> Contact is blocked
+              </div>
+              <button
+                type="button"
+                className="profile-action-btn primary"
+                onClick={handleUnblock}
+                disabled={relLoading}
+                style={{ background: '#10b981', width: '100%' }}
+              >
+                <i className="fa-solid fa-unlock"></i> Unblock Contact
+              </button>
+            </div>
+          )}
+
           {isNone && (
             <button type="button" className="profile-action-btn primary" onClick={handleSendFriendRequest} disabled={relLoading} style={{ width: '100%' }}>
               <i className="fa-solid fa-user-plus"></i>
               <span>Send Friend Request</span>
             </button>
+          )}
+
+          {relationship.conversationId && (
+            <div style={{ display: 'flex', width: '100%', gap: '8px', marginTop: '10px', paddingTop: '10px', borderTop: '1px solid var(--border-color, rgba(255,255,255,0.06))' }}>
+              {relationship.status !== 'BLOCKED' && (
+                <button
+                  type="button"
+                  onClick={handleBlock}
+                  disabled={relLoading}
+                  style={{
+                    flex: 1,
+                    background: 'rgba(239, 68, 68, 0.1)',
+                    border: '1px solid rgba(239, 68, 68, 0.25)',
+                    color: '#ef4444',
+                    borderRadius: '8px',
+                    padding: '8px',
+                    fontSize: '0.8rem',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                  }}
+                >
+                  <i className="fa-solid fa-ban"></i> Block
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={handleDeleteConversation}
+                disabled={relLoading}
+                style={{
+                  flex: 1,
+                  background: 'rgba(255, 255, 255, 0.05)',
+                  border: '1px solid var(--border-color, rgba(255, 255, 255, 0.1))',
+                  color: 'var(--text-muted, #94a3b8)',
+                  borderRadius: '8px',
+                  padding: '8px',
+                  fontSize: '0.8rem',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                }}
+              >
+                <i className="fa-solid fa-trash-can"></i> Delete Chat
+              </button>
+            </div>
           )}
         </div>
       </div>
