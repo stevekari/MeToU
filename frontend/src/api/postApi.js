@@ -3,7 +3,6 @@ import api from './axios';
 export const getFeedPosts = async () => {
   try {
     const res = await api.get('/posts');
-    return Array.isArray(res.data) ? res.data : [];
   } catch (err) {
     // If backend is waking up or endpoint not found on older deployment, return empty array gracefully
     if (err.response?.status === 404) {

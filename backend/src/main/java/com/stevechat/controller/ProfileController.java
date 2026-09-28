@@ -63,13 +63,30 @@ public class ProfileController {
         }).collect(Collectors.toList());
 
         Map<String, Object> resp = new HashMap<>();
-        resp.put("user", new UserDto(target));
+        UserDto userDto = new UserDto(target);
+        resp.put("userId", userDto.getUserId());
+        resp.put("id", userDto.getUserId());
+        resp.put("username", userDto.getUsername());
+        resp.put("displayName", userDto.getDisplayName());
+        resp.put("avatarUrl", userDto.getAvatarUrl());
+        resp.put("bio", userDto.getBio());
+        resp.put("headline", userDto.getHeadline());
+        resp.put("company", userDto.getCompany());
+        resp.put("location", userDto.getLocation());
+        resp.put("skills", userDto.getSkills());
+        resp.put("bannerUrl", userDto.getBannerUrl());
+        resp.put("portfolioUrl", userDto.getPortfolioUrl());
+        resp.put("isBusiness", userDto.getIsBusiness());
+        resp.put("businessServices", userDto.getBusinessServices());
+        resp.put("profileViews", userDto.getProfileViews());
+        resp.put("postImpressions", userDto.getPostImpressions());
+        resp.put("followersCount", userDto.getFollowersCount());
+        resp.put("followingCount", userDto.getFollowingCount());
+        resp.put("user", userDto);
         resp.put("isMe", isMe);
         resp.put("isConnected", isConnected);
         resp.put("posts", postDtos);
         resp.put("postsCount", userPosts.size());
-        resp.put("followersCount", target.getFollowersCount());
-        resp.put("followingCount", target.getFollowingCount());
 
         return ResponseEntity.ok(resp);
     }

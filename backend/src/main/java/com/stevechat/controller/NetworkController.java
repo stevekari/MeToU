@@ -40,11 +40,13 @@ public class NetworkController {
                 .map(Connection::getReceiverId)
                 .collect(Collectors.toSet());
 
-        List<Map<String, Object>> suggestions = allUsers.stream()
+        List<UserDto> suggestions = allUsers.stream()
                 .filter(u -> !u.getId().equals(me.getId()))
                 .filter(u -> {
                     if (role != null && !role.isBlank() && !"ALL".equalsIgnoreCase(role)) {
-                        String userHeadline = (u.getHeadline() + " " + u.getBio() + " " + u.getSkills()).toLowerCase();
+                        String userHeadline = ((u.getHeadline() != null ? u.getHeadline() : "") + " " +
+                                               (u.getBio() != null ? u.getBio() : "") + " " +
+                                               (u.getSkills() != null ? u.getSkills() : "")).toLowerCase();
                         return userHeadline.contains(role.toLowerCase());
                     }
                     return true;
@@ -52,20 +54,14 @@ public class NetworkController {
                 .filter(u -> {
                     if (search != null && !search.isBlank()) {
                         String query = search.toLowerCase();
-                        return u.getUsername().toLowerCase().contains(query) ||
-                               u.getDisplayName().toLowerCase().contains(query) ||
-                               u.getHeadline().toLowerCase().contains(query) ||
-                               u.getSkills().toLowerCase().contains(query);
+                        return (u.getUsername() != null && u.getUsername().toLowerCase().contains(query)) ||
+                               (u.getDisplayName() != null && u.getDisplayName().toLowerCase().contains(query)) ||
+                               (u.getHeadline() != null && u.getHeadline().toLowerCase().contains(query)) ||
+                               (u.getSkills() != null && u.getSkills().toLowerCase().contains(query));
                     }
                     return true;
                 })
-                .map(u -> {
-                    Map<String, Object> map = new HashMap<>();
-                    map.put("user", new UserDto(u));
-                    map.put("isConnected", connectedIds.contains(u.getId()));
-                    map.put("isBusiness", u.getIsBusiness());
-                    return map;
-                })
+                .map(UserDto::new)
                 .collect(Collectors.toList());
 
         return ResponseEntity.ok(suggestions);

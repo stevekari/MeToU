@@ -3,7 +3,6 @@ import api from './axios';
 export const getNetworkSuggestions = async () => {
   try {
     const res = await api.get('/network/suggestions');
-    return Array.isArray(res.data) ? res.data : [];
   } catch (err) {
     if (err.response?.status === 404) {
       try {

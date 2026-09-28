@@ -3,7 +3,6 @@ import api from './axios';
 export const getFullProfile = async (userId) => {
   try {
     const res = await api.get(`/profile/${userId}`);
-    return res.data;
   } catch (err) {
     if (err.response?.status === 404) {
       try {
