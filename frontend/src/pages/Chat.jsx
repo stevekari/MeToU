@@ -268,6 +268,15 @@ export default function Chat({ currentUserId }) {
   const friendCustomStatus = friendPresence?.status || (isFriendOnline ? 'online' : 'offline');
   const isFriendBusy = friendCustomStatus === 'busy';
 
+  const effectiveCurrentUserId = currentUserId || (() => {
+    try {
+      const u = JSON.parse(localStorage.getItem('user'));
+      return u?.userId || u?.id;
+    } catch {
+      return null;
+    }
+  })();
+
   const friendStatusType = isFriendBusy ? 'busy' : isFriendOnline ? 'online' : 'offline';
   const friendLastSeenTime = friendPresence?.lastSeen || friend?.lastSeen;
   const friendLastSeenText = !isFriendOnline && friendLastSeenTime ? `Last seen ${formatTimeAgo(friendLastSeenTime)}` : null;
@@ -278,7 +287,13 @@ export default function Chat({ currentUserId }) {
       : (friendLastSeenText || t('offline'));
 
   const typingState = typingMap[String(conversationId)];
-  const isOtherTyping = Boolean(typingState?.isTyping && String(typingState.userId) !== String(currentUserId));
+  const isTypingFresh = typingState?.timestamp ? (Date.now() - typingState.timestamp < 3500) : true;
+  const isOtherTyping = Boolean(
+    typingState?.isTyping &&
+    isTypingFresh &&
+    effectiveCurrentUserId != null &&
+    String(typingState.userId) !== String(effectiveCurrentUserId)
+  );
 
   useEffect(() => {
     if (selectedFriend) {
@@ -454,15 +469,6 @@ export default function Chat({ currentUserId }) {
   };
 
   const friendDisplayName = friend?.displayName || friend?.username || 'User';
-
-  const effectiveCurrentUserId = currentUserId || (() => {
-    try {
-      const u = JSON.parse(localStorage.getItem('user'));
-      return u?.userId || u?.id;
-    } catch {
-      return null;
-    }
-  })();
 
   const isPending = conversationStatus === 'PENDING';
   const isDeclined = conversationStatus === 'DECLINED';

@@ -89,16 +89,26 @@ export default function ChatInput({
     return () => document.removeEventListener('mousedown', handleOutside);
   }, [showAttachMenu]);
 
-  // Debounced typing handler
+  const lastTypingSentAtRef = useRef(0);
+
+  // Debounced & continuous typing handler
   const handleTextChange = (e) => {
     const nextVal = e.target.value;
     setText(nextVal);
 
     if (onTyping) {
-      if (!isTypingRef.current) {
+      if (!nextVal.trim()) {
+        stopTypingNow();
+        return;
+      }
+
+      const now = Date.now();
+      if (!isTypingRef.current || now - lastTypingSentAtRef.current > 1800) {
         isTypingRef.current = true;
+        lastTypingSentAtRef.current = now;
         onTyping(true);
       }
+
       if (typingTimerRef.current) {
         clearTimeout(typingTimerRef.current);
       }
@@ -110,11 +120,13 @@ export default function ChatInput({
   };
 
   const stopTypingNow = useCallback(() => {
-    if (isTypingRef.current && onTyping) {
+    if (onTyping) {
       isTypingRef.current = false;
+      lastTypingSentAtRef.current = 0;
       onTyping(false);
       if (typingTimerRef.current) {
         clearTimeout(typingTimerRef.current);
+        typingTimerRef.current = null;
       }
     }
   }, [onTyping]);

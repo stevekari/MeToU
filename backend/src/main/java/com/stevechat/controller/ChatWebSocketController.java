@@ -122,6 +122,14 @@ public class ChatWebSocketController {
         typingEvent.put("isTyping", isTyping);
 
         messagingTemplate.convertAndSend("/topic/conversation." + conversationId + ".typing", typingEvent);
+
+        try {
+            long convId = Long.parseLong(conversationId.toString());
+            conversationRepository.findById(convId).ifPresent(conv -> {
+                messagingTemplate.convertAndSend("/topic/user." + conv.getUserAId() + ".typing", typingEvent);
+                messagingTemplate.convertAndSend("/topic/user." + conv.getUserBId() + ".typing", typingEvent);
+            });
+        } catch (Exception ignored) {}
     }
 
     // Real-time read receipts

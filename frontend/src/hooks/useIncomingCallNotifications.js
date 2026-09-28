@@ -226,6 +226,18 @@ export function useIncomingCallNotifications(userId, onMessage) {
           }
         });
 
+        // User-specific typing events
+        client.subscribe(`/topic/user.${userId}.typing`, (frame) => {
+          try {
+            const typingData = JSON.parse(frame.body);
+            if (String(typingData.userId) !== String(userId)) {
+              dispatch(setTyping(typingData));
+            }
+          } catch (err) {
+            console.warn('User typing update error', err);
+          }
+        });
+
         syncSubscriptions(client);
       },
       onStompError: () => {},
