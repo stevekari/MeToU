@@ -103,6 +103,22 @@ export default function CallPanel({
     }
   }, [localStream]);
 
+  // Support keyboard answering in active chat panel when call is incoming
+  useEffect(() => {
+    if (!incoming) return undefined;
+    const handleKeyDown = (e) => {
+      if (e.key === 'Enter' || e.key === ' ' || e.key === 'a' || e.key === 'A') {
+        e.preventDefault();
+        onAccept?.();
+      } else if (e.key === 'Escape' || e.key === 'd' || e.key === 'D') {
+        e.preventDefault();
+        onEnd?.();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [incoming, onAccept, onEnd]);
+
   if (callState === 'idle') return null;
 
   const avatarSrc = resolveAvatarUrl(friend?.avatarUrl, friend?.username);
@@ -198,10 +214,11 @@ export default function CallPanel({
           <div className="incoming-actions">
             <button
               type="button"
-              className="btn-call-action btn-accept"
+              className="btn-call-action btn-accept pulse-accept"
               onClick={() => onAccept && onAccept()}
-              title={t('accept')}
+              title={`${t('accept')} (Press Enter or Space)`}
               aria-label={t('accept')}
+              autoFocus
             >
               <i className={`fa-solid ${videoCall ? 'fa-video' : 'fa-phone'}`}></i>
               <span>{t('accept')}</span>
@@ -210,7 +227,7 @@ export default function CallPanel({
               type="button"
               className="btn-call-action btn-hangup"
               onClick={() => onEnd && onEnd()}
-              title={t('decline')}
+              title={`${t('decline')} (Press Esc)`}
               aria-label={t('decline')}
             >
               <i className="fa-solid fa-phone-slash"></i>
