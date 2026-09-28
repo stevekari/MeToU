@@ -13,6 +13,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.http.ResponseEntity;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.security.core.Authentication;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
@@ -497,8 +498,19 @@ public class ConversationController {
     }
 
     // Delete full conversation & all its messages
-    @DeleteMapping("/{id}")
+    @Transactional
+    @RequestMapping(value = "/{id}", method = {RequestMethod.DELETE, RequestMethod.POST})
     public ResponseEntity<?> deleteConversation(@PathVariable Long id, Authentication auth) {
+        return performDeleteConversation(id, auth);
+    }
+
+    @Transactional
+    @PostMapping("/{id}/delete")
+    public ResponseEntity<?> deleteConversationPost(@PathVariable Long id, Authentication auth) {
+        return performDeleteConversation(id, auth);
+    }
+
+    private ResponseEntity<?> performDeleteConversation(Long id, Authentication auth) {
         User me = currentUser(auth);
         Conversation conv = conversationRepository.findById(id).orElse(null);
         if (conv == null) {
@@ -526,8 +538,19 @@ public class ConversationController {
     }
 
     // Clear all messages in conversation (keep friendship)
-    @DeleteMapping("/{id}/messages")
+    @Transactional
+    @RequestMapping(value = "/{id}/messages", method = {RequestMethod.DELETE, RequestMethod.POST})
     public ResponseEntity<?> clearMessages(@PathVariable Long id, Authentication auth) {
+        return performClearMessages(id, auth);
+    }
+
+    @Transactional
+    @PostMapping("/{id}/clear")
+    public ResponseEntity<?> clearMessagesPost(@PathVariable Long id, Authentication auth) {
+        return performClearMessages(id, auth);
+    }
+
+    private ResponseEntity<?> performClearMessages(Long id, Authentication auth) {
         User me = currentUser(auth);
         Conversation conv = conversationRepository.findById(id).orElse(null);
         if (conv == null) {

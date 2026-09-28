@@ -110,12 +110,18 @@ export function getCalls() {
 
 export function deleteConversation(conversationId) {
   if (!conversationId) return Promise.resolve(null);
-  return api.delete(`/conversations/${conversationId}`).then((res) => res.data);
+  return api.delete(`/conversations/${conversationId}`)
+    .catch(() => api.post(`/conversations/${conversationId}/delete`))
+    .catch(() => api.post(`/conversations/${conversationId}`))
+    .then((res) => res?.data || { success: true });
 }
 
 export function clearConversationMessages(conversationId) {
   if (!conversationId) return Promise.resolve(null);
-  return api.delete(`/conversations/${conversationId}/messages`).then((res) => res.data);
+  return api.delete(`/conversations/${conversationId}/messages`)
+    .catch(() => api.post(`/conversations/${conversationId}/clear`))
+    .catch(() => api.post(`/conversations/${conversationId}/messages`))
+    .then((res) => res?.data || { success: true });
 }
 
 export function blockUser(conversationId) {
