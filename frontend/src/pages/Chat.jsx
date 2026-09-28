@@ -21,6 +21,7 @@ import { formatTimeAgo } from '../utils/timeAgo';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useWebRTCCall } from '../hooks/useWebRTCCall';
 import CallPanel from '../components/CallPanel';
+import { useDispatch, useSelector } from 'react-redux';
 import { setActiveConversation, setMessages as setStoreMessages, addMessage as addStoreMessage, updateMessage as updateStoreMessage } from '../store/slices/chatSlice';
 import { setUserStatuses } from '../store/slices/presenceSlice';
 
@@ -127,7 +128,6 @@ export default function Chat({ currentUserId }) {
         if (message.id && list.some((m) => m.id === message.id)) {
           return list.map((m) => (m.id === message.id ? { ...m, ...message } : m));
         }
-        return [...list, message];
       });
 
       if (message.conversationId) {
