@@ -4,6 +4,7 @@ import { searchUsers, getPresenceMap } from "../api/userApi";
 import { getMyConversations, startConversation, acceptChatRequest, declineChatRequest } from "../api/conversationApi";
 import FriendCard from "../components/FriendCard";
 import UserProfileModal from "../components/UserProfileModal";
+import FeedWidget from "../components/FeedWidget";
 import { getMessagePreview } from "../utils/messageContent";
 import { resolveAvatarUrl } from "../utils/avatarUrl";
 import { useLanguage } from '../contexts/LanguageContext';
@@ -297,10 +298,8 @@ export default function FriendsList() {
         </div>
       </aside>
 
-      <section className="friends-placeholder">
-        <div className="empty-state">
-          {t('selectFriend')}
-        </div>
+      <section className="friends-placeholder" style={{ display: 'block', overflowY: 'auto', padding: '20px 16px 80px 16px' }}>
+        <FeedWidget user={user} />
       </section>
 
       {selectedProfileUser && (
