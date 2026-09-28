@@ -57,9 +57,13 @@ function IncomingCallManager({ user }) {
 export default function App() {
   const { user, loginUser, logout, updateStoredUser, isAuthenticated } = useAuth();
 
-  // Pre-warm backend on initial mount (wakes up Render free instance)
+  // Pre-warm backend on initial mount & keep-alive every 4 minutes (prevents Render free tier spin-down)
   useEffect(() => {
     api.get('/auth/health').catch(() => {});
+    const interval = setInterval(() => {
+      api.get('/auth/health').catch(() => {});
+    }, 4 * 60 * 1000);
+    return () => clearInterval(interval);
   }, []);
 
   return (

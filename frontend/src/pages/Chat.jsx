@@ -804,9 +804,12 @@ export default function Chat({ currentUserId }) {
           friend={friend}
           isMutedAudio={call.isMutedAudio}
           isMutedVideo={call.isMutedVideo}
+          isScreenSharing={call.isScreenSharing}
+          connectionQuality={call.connectionQuality}
           toggleMuteAudio={call.toggleMuteAudio}
           toggleMuteVideo={call.toggleMuteVideo}
           switchCamera={call.switchCamera}
+          toggleScreenShare={call.toggleScreenShare}
           onAccept={call.acceptCall}
           onEnd={call.callState === 'incoming' ? call.rejectCall : call.endCall}
         />

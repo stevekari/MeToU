@@ -26,7 +26,11 @@ export function useWebRTCCall({ conversationId, currentUserId, sendSignal, onSig
   const [error, setError] = useState('');
   const [isMutedAudio, setIsMutedAudio] = useState(false);
   const [isMutedVideo, setIsMutedVideo] = useState(false);
+  const [isScreenSharing, setIsScreenSharing] = useState(false);
+  const [connectionQuality, setConnectionQuality] = useState('good'); // 'good' | 'fair' | 'poor' | 'reconnecting'
 
+  const cameraTrackRef = useRef(null);
+  const screenTrackRef = useRef(null);
   const callStateRef = useRef(callState);
   const callTypeRef = useRef(callType);
   const sendSignalRef = useRef(sendSignal);
@@ -71,6 +75,16 @@ export function useWebRTCCall({ conversationId, currentUserId, sendSignal, onSig
     }
     peerRef.current?.close();
     peerRef.current = null;
+
+    if (screenTrackRef.current) {
+      screenTrackRef.current.stop();
+      screenTrackRef.current = null;
+    }
+    if (cameraTrackRef.current) {
+      cameraTrackRef.current.stop();
+      cameraTrackRef.current = null;
+    }
+
     localStreamRef.current?.getTracks().forEach((track) => track.stop());
     localStreamRef.current = null;
     setLocalStream(null);
@@ -81,6 +95,8 @@ export function useWebRTCCall({ conversationId, currentUserId, sendSignal, onSig
     setIsRinging(false);
     setIsMutedAudio(false);
     setIsMutedVideo(false);
+    setIsScreenSharing(false);
+    setConnectionQuality('good');
     pendingOfferRef.current = null;
     pendingIceCandidatesRef.current = [];
     callIdRef.current = null;
@@ -233,11 +249,13 @@ export function useWebRTCCall({ conversationId, currentUserId, sendSignal, onSig
         stopCallSounds();
       } else if (peer.iceConnectionState === 'disconnected') {
         log('ICE disconnected, attempting graceful reconnection');
+        setConnectionQuality('reconnecting');
         if (typeof peer.restartIce === 'function') {
           peer.restartIce();
         }
       } else if (peer.iceConnectionState === 'failed') {
         log('ICE failed, triggering ICE restart');
+        setConnectionQuality('reconnecting');
         if (typeof peer.restartIce === 'function') {
           peer.restartIce();
         } else {
@@ -428,6 +446,145 @@ export function useWebRTCCall({ conversationId, currentUserId, sendSignal, onSig
     }
   }, [callType, getMediaStream]);
 
+  const toggleScreenShare = useCallback(async () => {
+    if (callType !== 'video' || !peerRef.current || !localStreamRef.current) return;
+    try {
+      if (isScreenSharing) {
+        // Stop screen share and restore camera
+        if (screenTrackRef.current) {
+          screenTrackRef.current.stop();
+          screenTrackRef.current = null;
+        }
+        let restoreTrack = cameraTrackRef.current;
+        if (!restoreTrack || restoreTrack.readyState === 'ended') {
+          const newCamStream = await getMediaStream('video', currentFacingModeRef.current);
+          restoreTrack = newCamStream.getVideoTracks()[0];
+          cameraTrackRef.current = restoreTrack;
+        }
+        if (restoreTrack) {
+          const currentVideoTrack = localStreamRef.current.getVideoTracks()[0];
+          if (currentVideoTrack) {
+            localStreamRef.current.removeTrack(currentVideoTrack);
+          }
+          localStreamRef.current.addTrack(restoreTrack);
+          setLocalStream(new MediaStream(localStreamRef.current.getTracks()));
+
+          const sender = peerRef.current.getSenders().find((s) => s.track && s.track.kind === 'video');
+          if (sender) {
+            await sender.replaceTrack(restoreTrack);
+          }
+        }
+        setIsScreenSharing(false);
+        log('Screen share ended, restored camera');
+      } else {
+        // Start screen sharing
+        const screenStream = await navigator.mediaDevices.getDisplayMedia({
+          video: { cursor: 'always' },
+          audio: false,
+        });
+        const screenTrack = screenStream.getVideoTracks()[0];
+        if (!screenTrack) return;
+
+        // Cache camera track
+        const currentVideoTrack = localStreamRef.current.getVideoTracks()[0];
+        if (currentVideoTrack) {
+          cameraTrackRef.current = currentVideoTrack;
+          localStreamRef.current.removeTrack(currentVideoTrack);
+        }
+
+        screenTrackRef.current = screenTrack;
+        localStreamRef.current.addTrack(screenTrack);
+        setLocalStream(new MediaStream(localStreamRef.current.getTracks()));
+
+        const sender = peerRef.current.getSenders().find((s) => s.track && s.track.kind === 'video');
+        if (sender) {
+          await sender.replaceTrack(screenTrack);
+        }
+        setIsScreenSharing(true);
+        log('Screen sharing started');
+
+        screenTrack.onended = () => {
+          log('Screen track ended via browser UI');
+          setIsScreenSharing(false);
+          if (cameraTrackRef.current && cameraTrackRef.current.readyState !== 'ended') {
+            const curTrack = localStreamRef.current?.getVideoTracks()[0];
+            if (curTrack) localStreamRef.current?.removeTrack(curTrack);
+            localStreamRef.current?.addTrack(cameraTrackRef.current);
+            if (localStreamRef.current) {
+              setLocalStream(new MediaStream(localStreamRef.current.getTracks()));
+            }
+            const s = peerRef.current?.getSenders().find((send) => send.track && send.track.kind === 'video');
+            if (s) s.replaceTrack(cameraTrackRef.current);
+          }
+        };
+      }
+    } catch (err) {
+      console.warn('Screen share toggle failed:', err);
+    }
+  }, [callType, getMediaStream, isScreenSharing]);
+
+  // Connection Quality Monitor
+  useEffect(() => {
+    if (callState !== 'connected' || !peerRef.current) {
+      setConnectionQuality('good');
+      return undefined;
+    }
+
+    const intervalId = setInterval(async () => {
+      const peer = peerRef.current;
+      if (!peer) return;
+
+      const iceState = peer.iceConnectionState;
+      if (iceState === 'disconnected' || iceState === 'failed') {
+        setConnectionQuality('reconnecting');
+        return;
+      }
+
+      try {
+        const stats = await peer.getStats();
+        let rtt = null;
+
+        stats.forEach((report) => {
+          if (report.type === 'candidate-pair' && report.state === 'succeeded' && report.currentRoundTripTime != null) {
+            rtt = report.currentRoundTripTime;
+          }
+        });
+
+        if (rtt != null) {
+          if (rtt < 0.15) {
+            setConnectionQuality('good');
+          } else if (rtt < 0.35) {
+            setConnectionQuality('fair');
+          } else {
+            setConnectionQuality('poor');
+          }
+        } else {
+          setConnectionQuality(iceState === 'connected' || iceState === 'completed' ? 'good' : 'fair');
+        }
+      } catch {
+        // Stats not available yet
+      }
+    }, 2500);
+
+    return () => clearInterval(intervalId);
+  }, [callState]);
+
+  // Automatic ICE restart on network reconnect
+  useEffect(() => {
+    const handleOnline = () => {
+      log('Device came online, checking active call connection...');
+      if (peerRef.current && (callStateRef.current === 'connected' || callStateRef.current === 'calling')) {
+        if (typeof peerRef.current.restartIce === 'function') {
+          log('Triggering ICE restart after network change');
+          peerRef.current.restartIce();
+        }
+      }
+    };
+
+    window.addEventListener('online', handleOnline);
+    return () => window.removeEventListener('online', handleOnline);
+  }, []);
+
   // Handle incoming signals
   useEffect(() => {
     if (!onSignal || !conversationId) return;
@@ -543,6 +700,8 @@ export function useWebRTCCall({ conversationId, currentUserId, sendSignal, onSig
     error,
     isMutedAudio,
     isMutedVideo,
+    isScreenSharing,
+    connectionQuality,
     startCall,
     acceptCall: () => acceptCall(),
     endCall: () => closePeer(true),
@@ -550,5 +709,6 @@ export function useWebRTCCall({ conversationId, currentUserId, sendSignal, onSig
     toggleMuteAudio,
     toggleMuteVideo,
     switchCamera,
+    toggleScreenShare,
   };
 }
